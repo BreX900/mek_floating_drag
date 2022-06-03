@@ -18,6 +18,10 @@ know whether this package might be useful for them.
 
 TODO: List what your package can do. Maybe include images, gifs, or videos.
 
+- [ ] Hidden on tap
+- [ ] Hidden on scroll
+- [ ] Cancel on enter in area
+
 ## Getting started
 
 TODO: List prerequisites and provide or point to information on how to
@@ -37,3 +41,7 @@ const like = 'sample';
 TODO: Tell users more about the package: where to find more information, how to 
 contribute to the package, how to file issues, what response they can expect 
 from the package authors, and more.
+
+## Developer information
+
+`dart pub global run index_generator`

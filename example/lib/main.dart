@@ -23,37 +23,58 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatelessWidget {
   const MyHomePage({Key? key}) : super(key: key);
 
+  Widget _build(BuildContext context) {
+    return Positioned(
+      bottom: 16.0,
+      right: 0.0,
+      left: 0.0,
+      child: FighterMark(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Scaffold(
-          appBar: AppBar(),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const <Widget>[
-                Text(
-                  'You have pushed the button this many times:',
-                ),
+    return DefaultFlyZone(
+      child: Stack(
+        children: [
+          Scaffold(
+            appBar: AppBar(
+              actions: [
+                Builder(builder: (context) {
+                  return IconButton(
+                    onPressed: () => FlyZone.of(context).show(),
+                    icon: const Icon(Icons.add),
+                  );
+                }),
               ],
             ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const <Widget>[
+                  Text(
+                    'You have pushed the button this many times:',
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        FloatingDrag(
-          elasticEdgesResolver: (containerSize, childSize) {
-            return const EdgeInsets.symmetric(horizontal: -16.0, vertical: double.nan);
-          },
-          naturalEdgesResolver: (containerSize, childSize) {
-            return const EdgeInsets.symmetric(horizontal: double.nan, vertical: 64.0);
-          },
-          builder: (context) {
-            return FloatingActionButton(
-              onPressed: () {},
-            );
-          },
-        ),
-      ],
+          Plane(
+            elasticEdgesResolver: (containerSize, childSize) {
+              return const EdgeInsets.symmetric(horizontal: -16.0, vertical: double.nan);
+            },
+            naturalEdgesResolver: (containerSize, childSize) {
+              return const EdgeInsets.symmetric(horizontal: double.nan, vertical: 64.0);
+            },
+            builders: [_build],
+            builder: (context) {
+              return FloatingActionButton(
+                onPressed: () {},
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
