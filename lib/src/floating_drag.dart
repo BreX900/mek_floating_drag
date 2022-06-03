@@ -2,14 +2,26 @@ import 'package:flutter/widgets.dart';
 
 // FloatingWidget / FloatingStack
 class FloatingDrag extends StatefulWidget {
-  // final FloatingBorder elasticBorder;
-  // final FloatingBorder naturalBorder;
+  final Offset initialOffset;
+  final Duration elasticDuration;
+  final Curve elasticCurve;
+  final EdgeInsets Function(Size containerSize, Size childSize) elasticEdgesResolver;
+  final EdgeInsets Function(Size containerSize, Size childSize) naturalEdgesResolver;
   final WidgetBuilder builder;
 
   const FloatingDrag({
     Key? key,
+    this.initialOffset = const Offset(20.0, 20.0),
+    this.elasticDuration = const Duration(milliseconds: 500),
+    this.elasticCurve = Curves.bounceOut,
+    this.elasticEdgesResolver = buildEmptyEdges,
+    this.naturalEdgesResolver = buildEmptyEdges,
     required this.builder,
   }) : super(key: key);
+
+  static EdgeInsets buildEmptyEdges(Size _, Size __) {
+    return const EdgeInsets.all(double.nan);
+  }
 
   @override
   State<FloatingDrag> createState() => _FloatingDragState();
@@ -18,105 +30,147 @@ class FloatingDrag extends StatefulWidget {
 class _FloatingDragState extends State<FloatingDrag> with TickerProviderStateMixin {
   final _overlayEntries = <OverlayEntry>[];
 
-  final _birdKey = GlobalKey();
-  late final _birdEntry = OverlayEntry(
+  final _childKey = GlobalKey();
+  late final _childEntry = OverlayEntry(
     builder: _build,
   );
-  Offset _birdOffset = Offset(20.0, 20.0);
-  late AnimationController _birdAdjustController;
-  Animation<Offset>? _birdAdjustAnimation;
+  late Offset _offset;
+  late AnimationController _childPositionController;
+  Animation<Offset>? _childPositionAnimation;
 
   @override
   void initState() {
     super.initState();
-    _birdAdjustController = AnimationController(duration: Duration(milliseconds: 250), vsync: this);
-    _birdAdjustController.addListener(() {
-      if (_birdAdjustAnimation == null) return;
-      _birdOffset = _birdAdjustAnimation!.value;
-      _birdEntry.markNeedsBuild();
+    _offset = widget.initialOffset;
+    _childPositionController = AnimationController(vsync: this);
+    _childPositionController.addListener(() {
+      if (_childPositionAnimation == null) return;
+      _offset = _childPositionAnimation!.value;
+      _childEntry.markNeedsBuild();
     });
-    _overlayEntries.add(_birdEntry);
+    _overlayEntries.add(_childEntry);
+  }
+
+  @override
+  void didUpdateWidget(FloatingDrag oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialOffset != oldWidget.initialOffset) {
+      _offset = widget.initialOffset;
+      _stopAnimation();
+    }
+  }
+
+  @override
+  void dispose() {
+    _childPositionController.dispose();
+    super.dispose();
+  }
+
+  void _stopAnimation() {
+    _childPositionAnimation = null;
+    _childPositionController.reset();
+  }
+
+  void _startAnimation(Offset from, Offset to) {
+    _childPositionAnimation = _childPositionController.drive(Tween(
+      begin: from,
+      end: to,
+    ));
+    _childPositionController.animateTo(
+      1.0,
+      duration: widget.elasticDuration,
+      curve: widget.elasticCurve,
+    );
+  }
+
+  void _onPanStart(DragStartDetails details) {
+    _stopAnimation();
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    _offset = _offset + details.delta;
+    _childEntry.markNeedsBuild();
+  }
+
+  void _onPanEnd(DragEndDetails details) {
+    final containerBox = context.findRenderObject() as RenderBox;
+    final childBox = _childKey.currentContext!.findRenderObject() as RenderBox;
+
+    final containerSize = containerBox.size;
+    final childSize = childBox.size;
+    final currentOffset = _offset;
+
+    final isLeft = containerSize.width / 2 > currentOffset.dx;
+    final isTop = containerSize.height / 2 > currentOffset.dy;
+
+    var nextDx = currentOffset.dy;
+    var nextDy = currentOffset.dy;
+
+    // Elastic Edges
+
+    final elasticEdges = widget.elasticEdgesResolver(containerSize, childSize);
+
+    if (isLeft) {
+      if (!elasticEdges.left.isNaN) nextDx = elasticEdges.left;
+    } else {
+      if (!elasticEdges.right.isNaN) {
+        nextDx = containerSize.width - (childSize.width + elasticEdges.right);
+      }
+    }
+    if (isTop) {
+      if (!elasticEdges.top.isNaN) nextDy = elasticEdges.top;
+    } else {
+      if (!elasticEdges.bottom.isNaN) {
+        nextDy = containerSize.height - (childSize.height + elasticEdges.bottom);
+      }
+    }
+
+    // Natural Edges
+
+    final naturalEdges = widget.naturalEdgesResolver(containerSize, childSize);
+
+    if (isLeft) {
+      if (!naturalEdges.left.isNaN) {
+        if (currentOffset.dx < naturalEdges.left) nextDy = naturalEdges.left;
+      }
+    } else {
+      if (!naturalEdges.right.isNaN) {
+        final marginBottom = containerSize.width - (childSize.width + naturalEdges.right);
+        if (currentOffset.dx > marginBottom) nextDy = marginBottom;
+      }
+    }
+    if (isTop) {
+      if (!naturalEdges.top.isNaN) {
+        if (currentOffset.dy < naturalEdges.top) nextDy = naturalEdges.top;
+      }
+    } else {
+      if (!naturalEdges.bottom.isNaN) {
+        final marginBottom = containerSize.height - (childSize.height + naturalEdges.top);
+        if (currentOffset.dy > marginBottom) nextDy = marginBottom;
+      }
+    }
+
+    _startAnimation(currentOffset, Offset(nextDx, nextDy));
   }
 
   Widget _build(BuildContext context) {
-    final padding = EdgeInsets.symmetric(vertical: -1.0, horizontal: 16.0);
-    final margin = EdgeInsets.symmetric(vertical: 100.0, horizontal: -1);
-    RelativeRect;
-    Rect;
-    // Transform.translate
-    return Stack(
-      children: [
-        Positioned(
-          top: _birdOffset.dy,
-          left: _birdOffset.dx,
-          child: GestureDetector(
-            onPanStart: (details) {
-              _birdAdjustAnimation = null;
-              _birdAdjustController.stop();
-            },
-            onPanUpdate: (details) {
-              _birdOffset = _birdOffset + details.delta;
-              _birdEntry.markNeedsBuild();
-            },
-            onPanEnd: (details) {
-              final externalBox = context.findRenderObject() as RenderBox;
-              final childBox = _birdKey.currentContext!.findRenderObject() as RenderBox;
-              final currentOffset = _birdOffset;
-
-              final isLeft = externalBox.size.width / 2 > currentOffset.dx;
-              final isTop = externalBox.size.height / 2 > currentOffset.dy;
-
-              var nextDx = currentOffset.dy;
-              var nextDy = currentOffset.dy;
-
-              // Paddings
-
-              if (isLeft) {
-                if (padding.left >= 0) nextDx = padding.left;
-              } else {
-                final paddingRight = externalBox.size.width - (childBox.size.width + padding.right);
-                if (padding.right >= 0) nextDx = paddingRight;
-              }
-              if (isTop) {
-                if (padding.top >= 0) nextDy = padding.top;
-              } else {
-                final paddingBottom =
-                    externalBox.size.height - (childBox.size.height + padding.bottom);
-                if (padding.bottom >= 0) nextDy = paddingBottom;
-              }
-
-              // Margins
-
-              if (isLeft) {
-                if (currentOffset.dx < margin.left) nextDy = margin.left;
-              } else {
-                final marginBottom = externalBox.size.width - (childBox.size.width + margin.right);
-                if (currentOffset.dx > marginBottom) nextDy = marginBottom;
-              }
-              if (isTop) {
-                if (currentOffset.dy < margin.top) nextDy = margin.top;
-              } else {
-                final marginBottom = externalBox.size.height - (childBox.size.height + margin.top);
-                if (currentOffset.dy > marginBottom) nextDy = marginBottom;
-              }
-
-              _birdAdjustController.value = 0.0;
-              _birdAdjustAnimation = _birdAdjustController.drive(Tween(
-                begin: currentOffset,
-                end: Offset(nextDx, nextDy),
-              ));
-              _birdAdjustController.forward();
-            },
-            child: FittedBox(
-              fit: BoxFit.none,
-              child: KeyedSubtree(
-                key: _birdKey,
-                child: widget.builder(context),
-              ),
+    return Align(
+      alignment: AlignmentDirectional.topStart,
+      child: Transform.translate(
+        offset: _offset,
+        child: GestureDetector(
+          onPanStart: _onPanStart,
+          onPanEnd: _onPanEnd,
+          onPanUpdate: _onPanUpdate,
+          child: FittedBox(
+            fit: BoxFit.none,
+            child: KeyedSubtree(
+              key: _childKey,
+              child: widget.builder(context),
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 

@@ -41,6 +41,12 @@ class MyHomePage extends StatelessWidget {
           ),
         ),
         FloatingDrag(
+          elasticEdgesResolver: (containerSize, childSize) {
+            return const EdgeInsets.symmetric(horizontal: -16.0, vertical: double.nan);
+          },
+          naturalEdgesResolver: (containerSize, childSize) {
+            return const EdgeInsets.symmetric(horizontal: double.nan, vertical: 64.0);
+          },
           builder: (context) {
             return FloatingActionButton(
               onPressed: () {},
