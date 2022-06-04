@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
+import 'package:mek_floating_drag/src/fly_zone_controller.dart';
 
-typedef PlaneBuilder = Widget Function(BuildContext context, Widget child);
+typedef FloatingBuilder = Widget Function(BuildContext context, Widget child);
 
 class FlyZone extends InheritedWidget {
   final FlyZoneController controller;
@@ -72,52 +73,5 @@ class _DefaultFlyZoneState extends State<DefaultFlyZone> with TickerProviderStat
       controller: _controller,
       child: widget.child,
     );
-  }
-}
-
-class FlyZoneController {
-  final TickerProvider _ticker;
-
-  final isDragging = ValueNotifier<bool>(false);
-  final ValueNotifier<Offset> planePosition;
-  final planeBuilder = ValueNotifier<PlaneBuilder?>(null);
-
-  late final planeVisibility = AnimationController(
-    vsync: _ticker,
-    duration: const Duration(milliseconds: 250),
-    value: 1.0,
-  );
-  late final fighterVisibility = AnimationController(
-    vsync: _ticker,
-    duration: const Duration(milliseconds: 500),
-  );
-
-  FlyZoneController({
-    required TickerProvider vsync,
-    Offset initialPosition = const Offset(20.0, 20.0),
-  })  : _ticker = vsync,
-        planePosition = ValueNotifier<Offset>(initialPosition) {
-    isDragging.addListener(_listener);
-  }
-
-  void show() async {
-    await planeVisibility.forward();
-    planeBuilder.value = null;
-  }
-
-  void _listener() {
-    if (isDragging.value) {
-      fighterVisibility.forward();
-    } else {
-      fighterVisibility.reverse();
-    }
-  }
-
-  void dispose() {
-    isDragging.dispose();
-    planePosition.dispose();
-    planePosition.dispose();
-    planeVisibility.dispose();
-    fighterVisibility.dispose();
   }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
-import 'package:mek_floating_drag/src/floating_drag_controller.dart';
+import 'package:mek_floating_drag/src/fly_zone.dart';
+import 'package:mek_floating_drag/src/fly_zone_controller.dart';
 
-// FloatingWidget / FloatingStack
-class Plane extends StatefulWidget {
+class FloatingDart extends StatefulWidget {
   final Duration elasticDuration;
   final Curve elasticCurve;
   final EdgeInsets Function(Size containerSize, Size childSize) elasticEdgesResolver;
@@ -10,7 +10,7 @@ class Plane extends StatefulWidget {
   final List<WidgetBuilder> builders;
   final WidgetBuilder builder;
 
-  const Plane({
+  const FloatingDart({
     Key? key,
     this.elasticDuration = const Duration(milliseconds: 500),
     this.elasticCurve = Curves.bounceOut,
@@ -25,10 +25,10 @@ class Plane extends StatefulWidget {
   }
 
   @override
-  State<Plane> createState() => PlaneState();
+  State<FloatingDart> createState() => FloatingDartState();
 }
 
-class PlaneState extends State<Plane> with TickerProviderStateMixin {
+class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixin {
   final _overlayEntries = <OverlayEntry>[];
 
   FlyZoneController? _controller;
@@ -38,8 +38,8 @@ class PlaneState extends State<Plane> with TickerProviderStateMixin {
     builder: _build,
   );
 
-  late AnimationController _childPositionController;
-  Animation<Offset>? _childPositionAnimation;
+  late AnimationController _positionController;
+  Animation<Offset>? _positionAnimation;
 
   bool _isVisible = true;
   // Required because a Draggable widget is moved on widget tree
@@ -60,11 +60,11 @@ class PlaneState extends State<Plane> with TickerProviderStateMixin {
     _overlayEntries.addAll(widget.builders.map((e) => OverlayEntry(builder: e)));
     _overlayEntries.add(_childEntry);
 
-    _childPositionController = AnimationController(vsync: this);
+    _positionController = AnimationController(vsync: this);
 
-    _childPositionController.addListener(() {
-      if (_childPositionAnimation == null) return;
-      _controller!.planePosition.value = _childPositionAnimation!.value;
+    _positionController.addListener(() {
+      if (_positionAnimation == null) return;
+      _controller!.dartPosition.value = _positionAnimation!.value;
     });
   }
 
@@ -74,63 +74,63 @@ class PlaneState extends State<Plane> with TickerProviderStateMixin {
     final controller = FlyZone.of(context);
 
     if (_controller != controller) {
-      _controller?.planeVisibility.removeListener(_listenPlaneVisibility);
+      _controller?.dartVisibility.removeListener(_listenPlaneVisibility);
       _controller = controller;
-      _controller!.planeVisibility.addListener(_listenPlaneVisibility);
+      _controller!.dartVisibility.addListener(_listenPlaneVisibility);
     }
   }
 
   @override
   void dispose() {
-    _childPositionController.dispose();
+    _positionController.dispose();
     super.dispose();
   }
 
   void _listenPlaneVisibility() {
-    final value = _controller!.planeVisibility.value;
+    final value = _controller!.dartVisibility.value;
     _isVisible = value > 0;
     _childEntry.markNeedsBuild();
   }
 
   void _stopAnimation() {
-    _childPositionController.reset();
+    _positionController.reset();
   }
 
   void _startAnimation(Offset from, Offset to) async {
-    _childPositionAnimation = _childPositionController.drive(Tween(
+    _positionAnimation = _positionController.drive(Tween(
       begin: from,
       end: to,
     ));
-    await _childPositionController.animateTo(
+    await _positionController.animateTo(
       1.0,
       duration: widget.elasticDuration,
       curve: widget.elasticCurve,
     );
 
-    _childPositionAnimation = null;
-    _childPositionController.reset();
+    _positionAnimation = null;
+    _positionController.reset();
   }
 
   void _onPanStart() {
     _stopAnimation();
-    _controller!.isDragging.value = true;
+    _controller!.isDartDragging.value = true;
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    _controller!.planePosition.value += details.delta;
+    _controller!.dartPosition.value += details.delta;
   }
 
   void _onPanEnd(DraggableDetails details) {
-    _controller!.isDragging.value = false;
+    _controller!.isDartDragging.value = false;
 
-    if (_controller!.planeBuilder.value != null) return;
+    if (_controller!.dartBuilder.value != null) return;
 
     final containerBox = context.findRenderObject() as RenderBox;
     final childBox = _childKey.currentContext!.findRenderObject() as RenderBox;
 
     final containerSize = containerBox.size;
     final childSize = childBox.size;
-    final currentOffset = _controller!.planePosition.value;
+    final currentOffset = _controller!.dartPosition.value;
 
     final isLeft = containerSize.width / 2 > currentOffset.dx;
     final isTop = containerSize.height / 2 > currentOffset.dy;
@@ -214,24 +214,24 @@ class PlaneState extends State<Plane> with TickerProviderStateMixin {
     );
 
     return ValueListenableBuilder<bool>(
-      valueListenable: _controller!.isDragging,
+      valueListenable: _controller!.isDartDragging,
       child: draggable,
       builder: (context, isDragging, child) {
         if (isDragging) {
-          return _buildPositioned(_controller!.planePosition.value, child!);
+          return _buildPositioned(_controller!.dartPosition.value, child!);
         }
         return ValueListenableBuilder(
-          valueListenable: _controller!.planeBuilder,
+          valueListenable: _controller!.dartBuilder,
           child: child,
           builder: (context, planeBuilder, child) {
-            final planeBuilder = _controller!.planeBuilder.value;
+            final planeBuilder = _controller!.dartBuilder.value;
 
             if (planeBuilder != null) {
               return planeBuilder(context, child!);
             }
 
             return ValueListenableBuilder<Offset>(
-              valueListenable: _controller!.planePosition,
+              valueListenable: _controller!.dartPosition,
               child: planeBuilder?.call(context, child!) ?? child!,
               builder: (context, offset, child) {
                 return _buildPositioned(offset, child!);

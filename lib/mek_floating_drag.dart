@@ -3,6 +3,7 @@
 library lib;
 
 export 'src/floating_border.dart';
-export 'src/floating_delete_zone.dart';
-export 'src/floating_drag.dart';
-export 'src/floating_drag_controller.dart';
+export 'src/floating_dart.dart';
+export 'src/floating_target.dart';
+export 'src/fly_zone.dart';
+export 'src/fly_zone_controller.dart';

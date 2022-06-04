@@ -28,7 +28,7 @@ class MyHomePage extends StatelessWidget {
       bottom: 16.0,
       right: 0.0,
       left: 0.0,
-      child: FighterMark(),
+      child: FloatingBallTarget(),
     );
   }
 
@@ -59,7 +59,7 @@ class MyHomePage extends StatelessWidget {
               ),
             ),
           ),
-          Plane(
+          FloatingDart(
             elasticEdgesResolver: (containerSize, childSize) {
               return const EdgeInsets.symmetric(horizontal: -16.0, vertical: double.nan);
             },

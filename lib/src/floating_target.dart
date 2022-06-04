@@ -1,16 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:mek_floating_drag/src/floating_drag.dart';
-import 'package:mek_floating_drag/src/floating_drag_controller.dart';
+import 'package:mek_floating_drag/src/floating_dart.dart';
+import 'package:mek_floating_drag/src/fly_zone.dart';
+import 'package:mek_floating_drag/src/fly_zone_controller.dart';
 
-class FighterMark extends StatefulWidget {
-  const FighterMark({Key? key}) : super(key: key);
+class FloatingBallTarget extends StatelessWidget {
+  const FloatingBallTarget({Key? key}) : super(key: key);
 
   @override
-  State<FighterMark> createState() => _FighterMarkState();
+  Widget build(BuildContext context) {
+    return FloatingTarget(
+      builder: (context) {
+        return const SizedBox(
+          width: 100.0,
+          height: 100.0,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.red,
+            ),
+            child: Icon(Icons.close),
+          ),
+        );
+      },
+    );
+  }
 }
 
-class _FighterMarkState extends State<FighterMark> with TickerProviderStateMixin {
+class FloatingTarget extends StatefulWidget {
+  final WidgetBuilder builder;
+
+  const FloatingTarget({
+    Key? key,
+    required this.builder,
+  }) : super(key: key);
+
+  @override
+  State<FloatingTarget> createState() => _FloatingTargetState();
+}
+
+class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStateMixin {
   FlyZoneController? _controller;
 
   final _childKey = GlobalKey();
@@ -30,8 +59,8 @@ class _FighterMarkState extends State<FighterMark> with TickerProviderStateMixin
   }
 
   void _initAnimation() {
-    _scaleAnimation = _controller!.planeVisibility.drive(Tween(begin: 0.0, end: 1.0));
-    _positionAnimation = _controller!.planeVisibility.drive(_positionTween);
+    _scaleAnimation = _controller!.dartVisibility.drive(Tween(begin: 0.0, end: 1.0));
+    _positionAnimation = _controller!.dartVisibility.drive(_positionTween);
   }
 
   @override
@@ -41,7 +70,7 @@ class _FighterMarkState extends State<FighterMark> with TickerProviderStateMixin
 
   Widget _buildEndAnimation(BuildContext context, Widget child) {
     final animatedVisibility = AnimatedBuilder(
-      animation: _controller!.planeVisibility,
+      animation: _controller!.dartVisibility,
       child: child,
       builder: (context, child) {
         return Transform.scale(
@@ -65,30 +94,18 @@ class _FighterMarkState extends State<FighterMark> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildFighter(BuildContext context) {
-    return const SizedBox(
-      width: 100.0,
-      height: 100.0,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.red,
-        ),
-        child: Icon(Icons.close),
-      ),
-    );
-  }
+  Widget _buildFighter(BuildContext context) => widget.builder(context);
 
   @override
   Widget build(BuildContext context) {
-    final target = DragTarget<PlaneState>(
-      onWillAccept: (data) => data is PlaneState,
+    final target = DragTarget<FloatingDartState>(
+      onWillAccept: (data) => data is FloatingDartState,
       onAccept: (data) {
         final containerBox = data.containerBox;
         final planeBox = data.childBox;
 
         final childBox = _childKey.currentContext!.findRenderObject() as RenderBox;
-        final offset = _controller!.planePosition.value;
+        final offset = _controller!.dartPosition.value;
 
         final childGlobalOffset = childBox
             .localToGlobal(childBox.size.center(Offset.zero) - planeBox.size.center(Offset.zero));
@@ -103,9 +120,9 @@ class _FighterMarkState extends State<FighterMark> with TickerProviderStateMixin
           ..begin = childCenter
           ..end = offset;
 
-        _controller!.planeBuilder.value = _buildEndAnimation;
+        _controller!.dartBuilder.value = _buildEndAnimation;
 
-        _controller!.planeVisibility.reverse();
+        _controller!.dartVisibility.reverse();
       },
       builder: (context, candidate, rejected) {
         return _buildFighter(context);
@@ -113,11 +130,11 @@ class _FighterMarkState extends State<FighterMark> with TickerProviderStateMixin
     );
 
     return AnimatedBuilder(
-      animation: _controller!.fighterVisibility,
+      animation: _controller!.targetVisibility,
       child: target,
       builder: (context, child) {
         return Transform.scale(
-          scale: _controller!.fighterVisibility.value,
+          scale: _controller!.targetVisibility.value,
           child: Center(
             child: KeyedSubtree(
               key: _childKey,
