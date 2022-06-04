@@ -60,11 +60,15 @@ class MyHomePage extends StatelessWidget {
             ),
           ),
           FloatingDart(
-            elasticEdgesResolver: (containerSize, childSize) {
-              return const EdgeInsets.symmetric(horizontal: -16.0, vertical: double.nan);
-            },
             naturalEdgesResolver: (containerSize, childSize) {
               return const EdgeInsets.symmetric(horizontal: double.nan, vertical: 64.0);
+            },
+            elasticEdgesResolver: (containerSize, childSize) {
+              return const EdgeInsets.symmetric(horizontal: 0.0, vertical: double.nan);
+            },
+            retractEdgesResolver: (containerSize, childSize) {
+              return EdgeInsets.symmetric(
+                  horizontal: -(0.60 * childSize.width), vertical: double.nan);
             },
             builders: [_build],
             builder: (context) {

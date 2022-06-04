@@ -19,5 +19,7 @@ dev_dependencies:
 flutter:
 
 index_generator:
+  exclude:
+    - '**/utils/**'
   indexes:
     - path: lib

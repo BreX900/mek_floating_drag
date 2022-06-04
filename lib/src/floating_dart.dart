@@ -1,12 +1,16 @@
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/fly_zone.dart';
 import 'package:mek_floating_drag/src/fly_zone_controller.dart';
+import 'package:mek_floating_drag/src/utils/offset_resolver.dart';
+
+typedef FloatingEdgesResolver = EdgeInsets Function(Size containerSize, Size childSize);
 
 class FloatingDart extends StatefulWidget {
   final Duration elasticDuration;
   final Curve elasticCurve;
-  final EdgeInsets Function(Size containerSize, Size childSize) elasticEdgesResolver;
-  final EdgeInsets Function(Size containerSize, Size childSize) naturalEdgesResolver;
+  final FloatingEdgesResolver retractEdgesResolver;
+  final FloatingEdgesResolver elasticEdgesResolver;
+  final FloatingEdgesResolver naturalEdgesResolver;
   final List<WidgetBuilder> builders;
   final WidgetBuilder builder;
 
@@ -14,6 +18,7 @@ class FloatingDart extends StatefulWidget {
     Key? key,
     this.elasticDuration = const Duration(milliseconds: 500),
     this.elasticCurve = Curves.bounceOut,
+    this.retractEdgesResolver = buildEmptyEdges,
     this.elasticEdgesResolver = buildEmptyEdges,
     this.naturalEdgesResolver = buildEmptyEdges,
     this.builders = const <WidgetBuilder>[],
@@ -45,13 +50,9 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   // Required because a Draggable widget is moved on widget tree
   final _draggableKey = GlobalKey();
 
-  RenderBox get containerBox {
-    return context.findRenderObject() as RenderBox;
-  }
+  RenderBox get containerBox => context.findRenderObject() as RenderBox;
 
-  RenderBox get childBox {
-    return _childKey.currentContext!.findRenderObject() as RenderBox;
-  }
+  RenderBox get childBox => _childKey.currentContext!.findRenderObject() as RenderBox;
 
   @override
   void initState() {
@@ -74,9 +75,9 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     final controller = FlyZone.of(context);
 
     if (_controller != controller) {
-      _controller?.dartVisibility.removeListener(_listenPlaneVisibility);
+      _controller?.dartVisibility.removeListener(_listenVisibility);
       _controller = controller;
-      _controller!.dartVisibility.addListener(_listenPlaneVisibility);
+      _controller!.dartVisibility.addListener(_listenVisibility);
     }
   }
 
@@ -86,7 +87,7 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     super.dispose();
   }
 
-  void _listenPlaneVisibility() {
+  void _listenVisibility() {
     final value = _controller!.dartVisibility.value;
     _isVisible = value > 0;
     _childEntry.markNeedsBuild();
@@ -96,15 +97,40 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     _positionController.reset();
   }
 
-  void _startAnimation(Offset from, Offset to) async {
+  void _startAnimation(Offset currentOffset, Offset elasticOffset, Offset retractedOffset) async {
+    await _animateBetween(
+      currentOffset,
+      elasticOffset,
+      duration: widget.elasticDuration,
+      curve: widget.elasticCurve,
+    );
+
+    if (elasticOffset == retractedOffset) return;
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    await _animateBetween(
+      elasticOffset,
+      retractedOffset,
+      duration: widget.elasticDuration,
+      curve: Curves.linear,
+    );
+  }
+
+  Future<void> _animateBetween(
+    Offset from,
+    Offset to, {
+    required Duration duration,
+    required Curve curve,
+  }) async {
     _positionAnimation = _positionController.drive(Tween(
       begin: from,
       end: to,
     ));
     await _positionController.animateTo(
       1.0,
-      duration: widget.elasticDuration,
-      curve: widget.elasticCurve,
+      duration: duration,
+      curve: curve,
     );
 
     _positionAnimation = null;
@@ -125,64 +151,29 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
 
     if (_controller!.dartBuilder.value != null) return;
 
-    final containerBox = context.findRenderObject() as RenderBox;
-    final childBox = _childKey.currentContext!.findRenderObject() as RenderBox;
-
     final containerSize = containerBox.size;
     final childSize = childBox.size;
     final currentOffset = _controller!.dartPosition.value;
+    var targetOffset = currentOffset;
 
-    final isLeft = containerSize.width / 2 > currentOffset.dx;
-    final isTop = containerSize.height / 2 > currentOffset.dy;
-
-    var nextDx = currentOffset.dy;
-    var nextDy = currentOffset.dy;
+    final offsetResolver = OffsetResolver(
+      containerSize: containerSize,
+      childSize: childBox.size,
+    );
 
     // Elastic Edges
-
     final elasticEdges = widget.elasticEdgesResolver(containerSize, childSize);
-
-    if (isLeft) {
-      if (!elasticEdges.left.isNaN) nextDx = elasticEdges.left;
-    } else {
-      if (!elasticEdges.right.isNaN) {
-        nextDx = containerSize.width - (childSize.width + elasticEdges.right);
-      }
-    }
-    if (isTop) {
-      if (!elasticEdges.top.isNaN) nextDy = elasticEdges.top;
-    } else {
-      if (!elasticEdges.bottom.isNaN) {
-        nextDy = containerSize.height - (childSize.height + elasticEdges.bottom);
-      }
-    }
+    targetOffset = offsetResolver.getElasticTarget(targetOffset, elasticEdges);
 
     // Natural Edges
-
     final naturalEdges = widget.naturalEdgesResolver(containerSize, childSize);
+    targetOffset = offsetResolver.getNaturalTarget(targetOffset, naturalEdges);
 
-    if (isLeft) {
-      if (!naturalEdges.left.isNaN) {
-        if (currentOffset.dx < naturalEdges.left) nextDy = naturalEdges.left;
-      }
-    } else {
-      if (!naturalEdges.right.isNaN) {
-        final marginBottom = containerSize.width - (childSize.width + naturalEdges.right);
-        if (currentOffset.dx > marginBottom) nextDy = marginBottom;
-      }
-    }
-    if (isTop) {
-      if (!naturalEdges.top.isNaN) {
-        if (currentOffset.dy < naturalEdges.top) nextDy = naturalEdges.top;
-      }
-    } else {
-      if (!naturalEdges.bottom.isNaN) {
-        final marginBottom = containerSize.height - (childSize.height + naturalEdges.top);
-        if (currentOffset.dy > marginBottom) nextDy = marginBottom;
-      }
-    }
+    // Retracted Edges
+    final retractEdges = widget.retractEdgesResolver(containerSize, childSize);
+    final retractedOffset = offsetResolver.getRetractedTarget(targetOffset, retractEdges);
 
-    _startAnimation(currentOffset, Offset(nextDx, nextDy));
+    _startAnimation(currentOffset, targetOffset, retractedOffset);
   }
 
   Widget _buildPositioned(Offset offset, Widget child) {
