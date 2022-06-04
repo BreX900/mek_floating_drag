@@ -43,6 +43,7 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     builder: _build,
   );
 
+  Object? _animationKey;
   late AnimationController _positionController;
   Animation<Offset>? _positionAnimation;
 
@@ -94,10 +95,14 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   }
 
   void _stopAnimation() {
+    _animationKey = null;
     _positionController.reset();
   }
 
   void _startAnimation(Offset currentOffset, Offset elasticOffset, Offset retractedOffset) async {
+    final animationKey = Object();
+    _animationKey = animationKey;
+
     await _animateBetween(
       currentOffset,
       elasticOffset,
@@ -109,6 +114,7 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
 
     await Future.delayed(const Duration(seconds: 2));
 
+    if (_animationKey != animationKey) return;
     await _animateBetween(
       elasticOffset,
       retractedOffset,
