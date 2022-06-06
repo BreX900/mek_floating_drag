@@ -50,6 +50,7 @@ class FlyZoneController extends ChangeNotifier {
 
 class DartController {
   final TickerProvider _vsync;
+  Object? _animationKey;
 
   final isDragging = ValueNotifier(false);
   final position = ValueNotifier(Offset.zero);
@@ -73,10 +74,11 @@ class DartController {
 
   DartController({
     required TickerProvider vsync,
-    Duration duration = const Duration(milliseconds: 250),
+    Duration duration = const Duration(milliseconds: 300),
     Duration? visibilityDuration,
     Duration? naturalElasticDuration,
     Curve naturalElasticCurve = Curves.bounceInOut,
+    Duration restrictAfter = const Duration(seconds: 2),
     Duration? restrictDuration,
     Curve restrictCurve = Curves.linearToEaseOut,
   })  : _vsync = vsync,
@@ -84,7 +86,23 @@ class DartController {
         _naturalElasticDuration = naturalElasticDuration ?? duration,
         _naturalElasticCurve = naturalElasticCurve,
         _restrictDuration = restrictDuration ?? duration,
-        _restrictCurve = restrictCurve;
+        _restrictCurve = restrictCurve {
+    naturalElasticAnimation.addStatusListener((status) async {
+      switch (status) {
+        case AnimationStatus.forward:
+        case AnimationStatus.reverse:
+        case AnimationStatus.dismissed:
+          break;
+        case AnimationStatus.completed:
+          final animationKey = Object();
+          _animationKey = animationKey;
+          await Future.delayed(restrictAfter);
+          if (_animationKey != animationKey) return;
+          animateRestrict();
+          break;
+      }
+    });
+  }
 
   Future<void> show() async {
     await _visibilityController.animateTo(1.0, duration: _visibilityDuration);
@@ -95,8 +113,11 @@ class DartController {
   }
 
   Future<void> animateElastic() async {
+    _animationKey = null;
+    _restrictController.stop();
     _naturalElasticController.reset();
-    _naturalElasticController.animateTo(
+
+    await _naturalElasticController.animateTo(
       1.0,
       duration: _naturalElasticDuration,
       curve: _naturalElasticCurve,
@@ -104,8 +125,11 @@ class DartController {
   }
 
   Future<void> animateRestrict() async {
+    _animationKey = null;
+    _restrictController.stop();
     _restrictController.reset();
-    _restrictController.animateTo(
+
+    await _restrictController.animateTo(
       1.0,
       duration: _restrictDuration,
       curve: _restrictCurve,
@@ -113,9 +137,11 @@ class DartController {
   }
 
   void dragStart() {
-    isDragging.value = true;
+    _animationKey = null;
     _naturalElasticController.stop();
     _restrictController.stop();
+
+    isDragging.value = true;
   }
 
   void dragUpdate(Offset delta) {
@@ -126,6 +152,7 @@ class DartController {
     isDragging.value = false;
   }
 
+  /// Internal
   void updatePosition(Offset value) {
     position.value = value;
   }

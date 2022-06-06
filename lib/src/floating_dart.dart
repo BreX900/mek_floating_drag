@@ -81,7 +81,6 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
           break;
         case AnimationStatus.completed:
           setState(() => _naturalElasticAnimation = null);
-          controller.animateRestrict();
           break;
       }
     });
