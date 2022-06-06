@@ -94,9 +94,8 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
     final offset = _dartPositionAnimation.value;
     final scale = _dartScaleAnimation.value;
 
-    return Positioned(
-      top: offset.dy,
-      left: offset.dx,
+    return Transform.translate(
+      offset: offset,
       child: Transform.scale(
         scale: scale,
         transformHitTests: false,
@@ -110,17 +109,16 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
     final target = DragTarget<FloatingDartState>(
       onWillAccept: (data) => data is FloatingDartState,
       onAccept: (dartState) {
-        final flyZoneBox = _flyZone.renderBox;
-        final planeBox = dartState.childBox;
+        final dartBox = dartState.renderBox;
 
-        final childBox = _childKey.currentContext!.findRenderObject() as RenderBox;
+        final targetBox = _childKey.currentContext!.findRenderObject() as RenderBox;
         final offset = dartState.controller.position.value;
 
-        final childGlobalOffset = childBox
-            .localToGlobal(childBox.size.center(Offset.zero) - planeBox.size.center(Offset.zero));
-        final childInContainer = flyZoneBox.globalToLocal(childGlobalOffset);
+        final localTarget = targetBox.size.center(Offset.zero) - dartBox.size.center(Offset.zero);
+        final globalTarget = targetBox.localToGlobal(localTarget);
+        final localTargetInDart = dartBox.globalToLocal(globalTarget);
 
-        _startDartAnimation(dartState, offset, childInContainer);
+        _startDartAnimation(dartState, offset, localTargetInDart);
 
         dartState.builder = _buildDartAnimation;
       },

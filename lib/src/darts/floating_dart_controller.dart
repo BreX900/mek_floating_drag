@@ -3,10 +3,9 @@ import 'package:flutter/widgets.dart';
 class FloatingDartController {
   final TickerProvider _vsync;
   Object? _animationKey;
-  final Offset initialOffset;
 
   final isDragging = ValueNotifier(false);
-  late final position = ValueNotifier(initialOffset);
+  late final position = ValueNotifier(Offset.zero);
 
   final Duration _visibilityDuration;
 
@@ -28,7 +27,6 @@ class FloatingDartController {
   FloatingDartController({
     required TickerProvider vsync,
     bool initialVisibility = true,
-    this.initialOffset = const Offset(20.0, 20.0),
     Duration duration = const Duration(milliseconds: 300),
     Duration? visibilityDuration,
     Duration? naturalElasticDuration,
@@ -65,7 +63,7 @@ class FloatingDartController {
     if (_visibilityController.status == AnimationStatus.forward) return;
 
     _animationKey = null;
-    position.value = initialOffset;
+    position.value = Offset.zero;
     await _visibilityController.animateTo(1.0, duration: _visibilityDuration);
   }
 

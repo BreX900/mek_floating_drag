@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/darts/floating_dart_controller.dart';
 import 'package:mek_floating_drag/src/fly_zones/fly_zone.dart';
@@ -42,9 +44,7 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   Animation<Offset>? _naturalElasticAnimation;
   Animation<Offset>? _restrictAnimation;
 
-  final _childKey = GlobalKey();
-
-  RenderBox get childBox => _childKey.currentContext!.findRenderObject() as RenderBox;
+  RenderBox get renderBox => context.findRenderObject() as RenderBox;
 
   TransitionBuilder? _builder;
 
@@ -126,10 +126,6 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
           break;
       }
     }).addTo(subscriptions);
-    controller.naturalElasticAnimation.listen(() {
-      if (_naturalElasticAnimation == null) return;
-      controller.position.value = _naturalElasticAnimation!.value;
-    }).addTo(subscriptions);
 
     controller.restrictAnimation.listenStatus((status) {
       switch (status) {
@@ -158,13 +154,16 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
 
   void _startNaturalElasticAnimation() {
     final containerSize = _flyZone.renderBox.size;
-    final childSize = childBox.size;
-    final currentOffset = controller.position.value;
+    final childSize = renderBox.size;
+    final localCurrentOffset = controller.position.value;
+    final currentOffset =
+        _flyZone.renderBox.globalToLocal(renderBox.localToGlobal(localCurrentOffset));
+
     var targetOffset = currentOffset;
 
     final offsetResolver = OffsetResolver(
       containerSize: containerSize,
-      childSize: childBox.size,
+      childSize: renderBox.size,
     );
 
     // Elastic Edges
@@ -175,32 +174,40 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     final naturalEdges = widget.naturalEdgesResolver(containerSize, childSize);
     targetOffset = offsetResolver.getNaturalTarget(targetOffset, naturalEdges);
 
+    final localTargetOffset =
+        renderBox.globalToLocal(_flyZone.renderBox.localToGlobal(targetOffset));
+
     setState(() {
       _naturalElasticAnimation = controller.naturalElasticAnimation.drive(Tween(
-        begin: currentOffset,
-        end: targetOffset,
+        begin: localCurrentOffset,
+        end: localTargetOffset,
       ));
     });
   }
 
   void _startRestrictAnimation() {
     final containerSize = _flyZone.renderBox.size;
-    final childSize = childBox.size;
-    final currentOffset = controller.position.value;
+    final childSize = renderBox.size;
+    final localCurrentOffset = controller.position.value;
+    final currentOffset =
+        _flyZone.renderBox.globalToLocal(renderBox.localToGlobal(localCurrentOffset));
 
     final offsetResolver = OffsetResolver(
       containerSize: containerSize,
-      childSize: childBox.size,
+      childSize: renderBox.size,
     );
 
     // Retracted Edges
     final retractEdges = widget.retractEdgesResolver(containerSize, childSize);
     final retractedOffset = offsetResolver.getRetractedTarget(currentOffset, retractEdges);
 
+    final localRetractedOffset =
+        renderBox.globalToLocal(_flyZone.renderBox.localToGlobal(retractedOffset));
+
     setState(() {
       _restrictAnimation = controller.restrictAnimation.drive(Tween(
-        begin: currentOffset,
-        end: retractedOffset,
+        begin: localCurrentOffset,
+        end: localRetractedOffset,
       ));
     });
   }
@@ -234,17 +241,15 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     );
   }
 
-  Widget _buildPositioned(BuildContext context, Offset? offset, Widget? child) {
-    if (offset == null) return const SizedBox.shrink();
-    return Positioned(
-      top: offset.dy,
-      left: offset.dx,
+  Widget _buildPositioned(BuildContext context, Offset offset, Widget? child) {
+    return Transform.translate(
+      offset: offset,
       child: _buildAppearAnimation(context, child!),
     );
   }
 
   Widget _buildListeningPositionChanges(BuildContext context, Widget child) {
-    return ValueListenableBuilder<Offset?>(
+    return ValueListenableBuilder<Offset>(
       valueListenable: controller.position,
       builder: _buildPositioned,
       child: child,
@@ -253,21 +258,19 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Remove widget on tree when it is never visible
-    // if (controller.visibilityAnimation.value == 0.0) {
-    //   return const SizedBox.shrink();
-    // }
-
-    Widget current = KeyedSubtree(
-      key: _childKey,
-      child: widget.child,
-    );
+    Widget current = widget.child;
 
     current = Draggable(
       key: _draggableKey,
       rootOverlay: false,
       data: this,
-      childWhenDragging: const SizedBox.shrink(),
+      childWhenDragging: Visibility(
+        visible: false,
+        maintainState: true,
+        maintainSize: true,
+        maintainAnimation: true,
+        child: current,
+      ),
       feedback: current,
       onDragStarted: _onPanStart,
       onDragUpdate: _onPanUpdate,

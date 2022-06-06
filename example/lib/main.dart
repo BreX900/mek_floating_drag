@@ -36,15 +36,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Widget _build(BuildContext context) {
-    return const Positioned(
-      bottom: 16.0,
-      right: 0.0,
-      left: 0.0,
-      child: FloatingBallTarget(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final scaffold = Scaffold(
@@ -59,7 +50,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       body: RestrictedFlyZone(
         child: SingleChildScrollView(
           child: Column(
-            children: Colors.primaries.map((color) {
+            children: Colors.primaries.reversed.map((color) {
               return Container(
                 height: 100.0,
                 color: color,
@@ -70,30 +61,37 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       ),
     );
 
+    const target = FloatingBallTarget();
+
+    final dart = FloatingDart(
+      controller: _dartController,
+      naturalEdgesResolver: (containerSize, childSize) {
+        return const EdgeInsets.symmetric(horizontal: double.nan, vertical: 64.0);
+      },
+      elasticEdgesResolver: (containerSize, childSize) {
+        return const EdgeInsets.symmetric(horizontal: 16.0, vertical: double.nan);
+      },
+      retractEdgesResolver: (containerSize, childSize) {
+        return EdgeInsets.symmetric(horizontal: -(0.60 * childSize.width), vertical: double.nan);
+      },
+      child: FloatingActionButton(
+        onPressed: () {},
+      ),
+    );
+
     return FlyZone.stacked(
       entries: [
-        _build(context),
-        FloatingDart(
-          controller: _dartController,
-          naturalEdgesResolver: (containerSize, childSize) {
-            return const EdgeInsets.symmetric(horizontal: double.nan, vertical: 64.0);
-          },
-          elasticEdgesResolver: (containerSize, childSize) {
-            return const EdgeInsets.symmetric(horizontal: 0.0, vertical: double.nan);
-          },
-          retractEdgesResolver: (containerSize, childSize) {
-            return EdgeInsets.symmetric(
-                horizontal: -(0.60 * childSize.width), vertical: double.nan);
-          },
-          child: FloatingActionButton(
-            onPressed: () {},
-          ),
+        const Positioned(
+          bottom: 16.0,
+          right: 0.0,
+          left: 0.0,
+          child: target,
         ),
-        SizedBox(
-          height: 100,
-          width: 100,
-          child: Test(),
-        )
+        Positioned(
+          bottom: 16.0,
+          right: 16.0,
+          child: dart,
+        ),
       ],
       child: scaffold,
     );
