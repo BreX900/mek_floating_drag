@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/fly_zone.dart';
 import 'package:mek_floating_drag/src/fly_zone_controller.dart';
+import 'package:mek_floating_drag/src/utils/listener_subscription.dart';
 import 'package:mek_floating_drag/src/utils/offset_resolver.dart';
 
 typedef FloatingDartBuilder = Widget Function(BuildContext context, Widget child);
@@ -44,6 +45,8 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   DartController? _internalController;
   DartController get controller => (widget.controller ?? _internalController)!;
 
+  final subscriptions = <ListenerSubscription>[];
+
   Animation<Offset>? _naturalElasticAnimation;
   Animation<Offset>? _restrictAnimation;
 
@@ -69,45 +72,7 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     _overlayEntries.addAll(widget.builders.map((e) => OverlayEntry(builder: e)));
     _overlayEntries.add(_childEntry);
 
-    controller.naturalElasticAnimation.addStatusListener((status) {
-      switch (status) {
-        case AnimationStatus.forward:
-          _startNaturalElasticAnimation();
-          break;
-        case AnimationStatus.reverse:
-          break;
-        case AnimationStatus.dismissed:
-          setState(() => _naturalElasticAnimation = null);
-          break;
-        case AnimationStatus.completed:
-          setState(() => _naturalElasticAnimation = null);
-          break;
-      }
-    });
-    controller.naturalElasticAnimation.addListener(() {
-      if (_naturalElasticAnimation == null) return;
-      controller.position.value = _naturalElasticAnimation!.value;
-    });
-
-    controller.restrictAnimation.addStatusListener((status) {
-      switch (status) {
-        case AnimationStatus.forward:
-          _startRestrictAnimation();
-          break;
-        case AnimationStatus.reverse:
-          break;
-        case AnimationStatus.dismissed:
-          setState(() => _restrictAnimation = null);
-          break;
-        case AnimationStatus.completed:
-          setState(() => _restrictAnimation = null);
-          break;
-      }
-    });
-    controller.restrictAnimation.addListener(() {
-      if (_restrictAnimation == null) return;
-      controller.position.value = _restrictAnimation!.value;
-    });
+    _initControllerListeners();
   }
 
   @override
@@ -126,15 +91,64 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   void didUpdateWidget(FloatingDart oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
+      _disposeControllerListeners();
       _flyZoneController?.detachDart((oldWidget.controller ?? _internalController)!);
       _flyZoneController?.attachDart(controller);
+      _initControllerListeners();
     }
   }
 
   @override
   void dispose() {
+    _disposeControllerListeners();
     _internalController?.dispose();
     super.dispose();
+  }
+
+  void _initControllerListeners() {
+    controller.naturalElasticAnimation.listenStatus((status) {
+      switch (status) {
+        case AnimationStatus.forward:
+          _startNaturalElasticAnimation();
+          break;
+        case AnimationStatus.reverse:
+          break;
+        case AnimationStatus.dismissed:
+          setState(() => _naturalElasticAnimation = null);
+          break;
+        case AnimationStatus.completed:
+          setState(() => _naturalElasticAnimation = null);
+          break;
+      }
+    }).addTo(subscriptions);
+    controller.naturalElasticAnimation.listen(() {
+      if (_naturalElasticAnimation == null) return;
+      controller.position.value = _naturalElasticAnimation!.value;
+    }).addTo(subscriptions);
+
+    controller.restrictAnimation.listenStatus((status) {
+      switch (status) {
+        case AnimationStatus.forward:
+          _startRestrictAnimation();
+          break;
+        case AnimationStatus.reverse:
+          break;
+        case AnimationStatus.dismissed:
+          setState(() => _restrictAnimation = null);
+          break;
+        case AnimationStatus.completed:
+          setState(() => _restrictAnimation = null);
+          break;
+      }
+    }).addTo(subscriptions);
+    controller.restrictAnimation.listen(() {
+      if (_restrictAnimation == null) return;
+      controller.position.value = _restrictAnimation!.value;
+    }).addTo(subscriptions);
+  }
+
+  void _disposeControllerListeners() {
+    subscriptions.close();
   }
 
   void _startNaturalElasticAnimation() {
