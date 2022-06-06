@@ -5,11 +5,17 @@ import 'package:mek_floating_drag/src/fly_zone.dart';
 import 'package:mek_floating_drag/src/fly_zone_controller.dart';
 
 class FloatingBallTarget extends StatelessWidget {
-  const FloatingBallTarget({Key? key}) : super(key: key);
+  final TargetController? controller;
+
+  const FloatingBallTarget({
+    Key? key,
+    this.controller,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return FloatingTarget(
+      controller: controller,
       builder: (context) {
         return const SizedBox(
           width: 100.0,
@@ -28,10 +34,12 @@ class FloatingBallTarget extends StatelessWidget {
 }
 
 class FloatingTarget extends StatefulWidget {
+  final TargetController? controller;
   final WidgetBuilder builder;
 
   const FloatingTarget({
     Key? key,
+    this.controller,
     required this.builder,
   }) : super(key: key);
 
@@ -41,7 +49,8 @@ class FloatingTarget extends StatefulWidget {
 
 class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStateMixin {
   FlyZoneController? _flyZoneController;
-  late final TargetController _controller;
+  TargetController? _internalController;
+  TargetController get _controller => (widget.controller ?? _internalController)!;
 
   final _childKey = GlobalKey();
 
@@ -53,7 +62,7 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
   void initState() {
     super.initState();
 
-    _controller = TargetController(vsync: this);
+    _internalController = TargetController(vsync: this);
   }
 
   @override
@@ -64,6 +73,15 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
     if (_flyZoneController != flyZoneController) {
       _flyZoneController?.detachTarget(_controller);
       _flyZoneController = flyZoneController;
+      _flyZoneController?.attachTarget(_controller);
+    }
+  }
+
+  @override
+  void didUpdateWidget(FloatingTarget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      _flyZoneController?.detachTarget((oldWidget.controller ?? _internalController)!);
       _flyZoneController?.attachTarget(_controller);
     }
   }

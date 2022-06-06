@@ -24,7 +24,7 @@ class MyHomePage extends StatelessWidget {
   const MyHomePage({Key? key}) : super(key: key);
 
   Widget _build(BuildContext context) {
-    return Positioned(
+    return const Positioned(
       bottom: 16.0,
       right: 0.0,
       left: 0.0,

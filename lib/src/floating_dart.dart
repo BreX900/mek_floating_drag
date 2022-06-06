@@ -9,8 +9,7 @@ typedef FloatingDartBuilder = Widget Function(BuildContext context, Widget child
 typedef FloatingEdgesResolver = EdgeInsets Function(Size containerSize, Size childSize);
 
 class FloatingDart extends StatefulWidget {
-  final Duration elasticDuration;
-  final Curve elasticCurve;
+  final DartController? controller;
   final FloatingEdgesResolver retractEdgesResolver;
   final FloatingEdgesResolver elasticEdgesResolver;
   final FloatingEdgesResolver naturalEdgesResolver;
@@ -19,8 +18,7 @@ class FloatingDart extends StatefulWidget {
 
   const FloatingDart({
     Key? key,
-    this.elasticDuration = const Duration(milliseconds: 500),
-    this.elasticCurve = Curves.bounceOut,
+    this.controller,
     this.retractEdgesResolver = buildEmptyEdges,
     this.elasticEdgesResolver = buildEmptyEdges,
     this.naturalEdgesResolver = buildEmptyEdges,
@@ -43,8 +41,8 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   );
 
   FlyZoneController? _flyZoneController;
-  late final DartController _controller;
-  DartController get controller => _controller;
+  DartController? _internalController;
+  DartController get controller => (widget.controller ?? _internalController)!;
 
   Animation<Offset>? _naturalElasticAnimation;
   Animation<Offset>? _restrictAnimation;
@@ -66,12 +64,12 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   void initState() {
     super.initState();
 
-    _controller = DartController(vsync: this);
+    if (widget.controller == null) _internalController = DartController(vsync: this);
 
     _overlayEntries.addAll(widget.builders.map((e) => OverlayEntry(builder: e)));
     _overlayEntries.add(_childEntry);
 
-    _controller.naturalElasticAnimation.addStatusListener((status) {
+    controller.naturalElasticAnimation.addStatusListener((status) {
       switch (status) {
         case AnimationStatus.forward:
           _startNaturalElasticAnimation();
@@ -83,16 +81,16 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
           break;
         case AnimationStatus.completed:
           setState(() => _naturalElasticAnimation = null);
-          _controller.animateRestrict();
+          controller.animateRestrict();
           break;
       }
     });
-    _controller.naturalElasticAnimation.addListener(() {
+    controller.naturalElasticAnimation.addListener(() {
       if (_naturalElasticAnimation == null) return;
-      _controller.position.value = _naturalElasticAnimation!.value;
+      controller.position.value = _naturalElasticAnimation!.value;
     });
 
-    _controller.restrictAnimation.addStatusListener((status) {
+    controller.restrictAnimation.addStatusListener((status) {
       switch (status) {
         case AnimationStatus.forward:
           _startRestrictAnimation();
@@ -107,9 +105,9 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
           break;
       }
     });
-    _controller.restrictAnimation.addListener(() {
+    controller.restrictAnimation.addListener(() {
       if (_restrictAnimation == null) return;
-      _controller.position.value = _restrictAnimation!.value;
+      controller.position.value = _restrictAnimation!.value;
     });
   }
 
@@ -119,15 +117,24 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     final flyZoneController = FlyZone.of(context);
 
     if (_flyZoneController != flyZoneController) {
-      _flyZoneController?.detachDart(_controller);
+      _flyZoneController?.detachDart(controller);
       _flyZoneController = flyZoneController;
-      _flyZoneController?.attachDart(_controller);
+      _flyZoneController?.attachDart(controller);
+    }
+  }
+
+  @override
+  void didUpdateWidget(FloatingDart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      _flyZoneController?.detachDart((oldWidget.controller ?? _internalController)!);
+      _flyZoneController?.attachDart(controller);
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _internalController?.dispose();
     super.dispose();
   }
 
@@ -151,7 +158,7 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     targetOffset = offsetResolver.getNaturalTarget(targetOffset, naturalEdges);
 
     setState(() {
-      _naturalElasticAnimation = _controller.naturalElasticAnimation.drive(Tween(
+      _naturalElasticAnimation = controller.naturalElasticAnimation.drive(Tween(
         begin: currentOffset,
         end: targetOffset,
       ));
@@ -173,7 +180,7 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     final retractedOffset = offsetResolver.getRetractedTarget(currentOffset, retractEdges);
 
     setState(() {
-      _restrictAnimation = _controller.restrictAnimation.drive(Tween(
+      _restrictAnimation = controller.restrictAnimation.drive(Tween(
         begin: currentOffset,
         end: retractedOffset,
       ));
@@ -181,19 +188,19 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   }
 
   void _onPanStart() {
-    _controller.dragStart();
+    controller.dragStart();
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    _controller.dragUpdate(details.delta);
+    controller.dragUpdate(details.delta);
   }
 
   void _onPanEnd(DraggableDetails details) {
-    _controller.dragEnd();
+    controller.dragEnd();
 
     if (_builder != null) return;
 
-    _controller.animateElastic();
+    controller.animateElastic();
   }
 
   Widget _buildPositioned(BuildContext context, Offset offset, Widget? child) {

@@ -25,12 +25,10 @@ class FlyZone extends InheritedWidget {
 }
 
 class DefaultFlyZone extends StatefulWidget {
-  final Offset initialPosition;
   final Widget child;
 
   const DefaultFlyZone({
     Key? key,
-    this.initialPosition = const Offset(20.0, 20.0),
     required this.child,
   }) : super(key: key);
 
@@ -45,18 +43,6 @@ class _DefaultFlyZoneState extends State<DefaultFlyZone> with TickerProviderStat
   void initState() {
     super.initState();
     _controller = FlyZoneController();
-  }
-
-  @override
-  void didUpdateWidget(DefaultFlyZone oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.initialPosition != oldWidget.initialPosition) {
-      _controller.dispose();
-      _controller = FlyZoneController(
-          // initialPosition: widget.initialPosition,
-          // vsync: this,
-          );
-    }
   }
 
   @override

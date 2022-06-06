@@ -54,40 +54,52 @@ class DartController {
   final isDragging = ValueNotifier(false);
   final position = ValueNotifier(Offset.zero);
 
-  final visibilityDuration = const Duration(milliseconds: 400);
-
-  final naturalElasticDuration = const Duration(milliseconds: 400);
-  final naturalElasticCurve = Curves.bounceOut;
-
-  final restrictDuration = const Duration(milliseconds: 400);
+  final Duration _visibilityDuration;
 
   late final _visibilityController = AnimationController(vsync: _vsync, value: 1.0);
   Animation<double> get visibilityAnimation => _visibilityController.view;
 
+  final Duration _naturalElasticDuration;
+  final Curve _naturalElasticCurve;
+
   late final _naturalElasticController = AnimationController(vsync: _vsync);
   Animation<double> get naturalElasticAnimation => _naturalElasticController.view;
+
+  final Duration _restrictDuration;
+  final Curve _restrictCurve;
 
   late final _restrictController = AnimationController(vsync: _vsync);
   Animation<double> get restrictAnimation => _restrictController.view;
 
   DartController({
     required TickerProvider vsync,
-  }) : _vsync = vsync;
+    Duration duration = const Duration(milliseconds: 250),
+    Duration? visibilityDuration,
+    Duration? naturalElasticDuration,
+    Curve naturalElasticCurve = Curves.bounceInOut,
+    Duration? restrictDuration,
+    Curve restrictCurve = Curves.linearToEaseOut,
+  })  : _vsync = vsync,
+        _visibilityDuration = visibilityDuration ?? duration,
+        _naturalElasticDuration = naturalElasticDuration ?? duration,
+        _naturalElasticCurve = naturalElasticCurve,
+        _restrictDuration = restrictDuration ?? duration,
+        _restrictCurve = restrictCurve;
 
   Future<void> show() async {
-    await _visibilityController.animateTo(1.0, duration: visibilityDuration);
+    await _visibilityController.animateTo(1.0, duration: _visibilityDuration);
   }
 
   Future<void> hide() async {
-    await _visibilityController.animateTo(0.0, duration: visibilityDuration);
+    await _visibilityController.animateTo(0.0, duration: _visibilityDuration);
   }
 
   Future<void> animateElastic() async {
     _naturalElasticController.reset();
     _naturalElasticController.animateTo(
       1.0,
-      duration: naturalElasticDuration,
-      curve: naturalElasticCurve,
+      duration: _naturalElasticDuration,
+      curve: _naturalElasticCurve,
     );
   }
 
@@ -95,8 +107,8 @@ class DartController {
     _restrictController.reset();
     _restrictController.animateTo(
       1.0,
-      duration: naturalElasticDuration,
-      curve: naturalElasticCurve,
+      duration: _restrictDuration,
+      curve: _restrictCurve,
     );
   }
 
@@ -127,29 +139,33 @@ class DartController {
 class TargetController {
   final TickerProvider _vsync;
 
-  final visibilityDuration = const Duration(milliseconds: 250);
-  final visibilityCurve = Curves.linear;
+  final Duration _visibilityDuration;
+  final Curve _visibilityCurve;
 
   late final _visibilityController = AnimationController(vsync: _vsync);
   Animation<double> get visibilityAnimation => _visibilityController.view;
 
   TargetController({
     required TickerProvider vsync,
-  }) : _vsync = vsync;
+    Duration visibilityDuration = const Duration(milliseconds: 250),
+    Curve visibilityCurve = Curves.easeInToLinear,
+  })  : _vsync = vsync,
+        _visibilityDuration = visibilityDuration,
+        _visibilityCurve = visibilityCurve;
 
   Future<void> show() async {
     await _visibilityController.animateTo(
       1.0,
-      duration: visibilityDuration,
-      curve: visibilityCurve,
+      duration: _visibilityDuration,
+      curve: _visibilityCurve,
     );
   }
 
   Future<void> hide() async {
     await _visibilityController.animateTo(
       0.0,
-      duration: visibilityDuration,
-      curve: visibilityCurve,
+      duration: _visibilityDuration,
+      curve: _visibilityCurve,
     );
   }
 }
