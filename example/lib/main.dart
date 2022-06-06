@@ -20,8 +20,21 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key}) : super(key: key);
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
+  late final _dartController = FloatingDartController(vsync: this);
+
+  @override
+  void dispose() {
+    _dartController.dispose();
+    super.dispose();
+  }
 
   Widget _build(BuildContext context) {
     return const Positioned(
@@ -40,12 +53,12 @@ class MyHomePage extends StatelessWidget {
           Scaffold(
             appBar: AppBar(
               actions: [
-                // Builder(builder: (context) {
-                //   return IconButton(
-                //     onPressed: () => FlyZone.of(context).show(),
-                //     icon: const Icon(Icons.add),
-                //   );
-                // }),
+                Builder(builder: (context) {
+                  return IconButton(
+                    onPressed: () => _dartController.show(),
+                    icon: const Icon(Icons.add),
+                  );
+                }),
               ],
             ),
             body: RestrictedFlyZone(
@@ -62,6 +75,7 @@ class MyHomePage extends StatelessWidget {
             ),
           ),
           FloatingDart(
+            controller: _dartController,
             naturalEdgesResolver: (containerSize, childSize) {
               return const EdgeInsets.symmetric(horizontal: double.nan, vertical: 64.0);
             },

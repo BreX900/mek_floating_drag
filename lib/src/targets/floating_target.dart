@@ -1,40 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:mek_floating_drag/src/floating_dart.dart';
-import 'package:mek_floating_drag/src/fly_zone.dart';
-import 'package:mek_floating_drag/src/fly_zone_controller.dart';
-
-class FloatingBallTarget extends StatelessWidget {
-  final TargetController? controller;
-
-  const FloatingBallTarget({
-    Key? key,
-    this.controller,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingTarget(
-      controller: controller,
-      builder: (context) {
-        return const SizedBox(
-          width: 100.0,
-          height: 100.0,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.red,
-            ),
-            child: Icon(Icons.close),
-          ),
-        );
-      },
-    );
-  }
-}
+import 'package:mek_floating_drag/src/darts/floating_dart.dart';
+import 'package:mek_floating_drag/src/fly_zones/fly_zone.dart';
+import 'package:mek_floating_drag/src/fly_zones/fly_zone_controller.dart';
+import 'package:mek_floating_drag/src/targets/floating_target_controller.dart';
 
 class FloatingTarget extends StatefulWidget {
-  final TargetController? controller;
+  final FloatingTargetController? controller;
   final WidgetBuilder builder;
 
   const FloatingTarget({
@@ -49,8 +20,8 @@ class FloatingTarget extends StatefulWidget {
 
 class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStateMixin {
   FlyZoneController? _flyZoneController;
-  TargetController? _internalController;
-  TargetController get _controller => (widget.controller ?? _internalController)!;
+  FloatingTargetController? _internalController;
+  FloatingTargetController get _controller => (widget.controller ?? _internalController)!;
 
   final _childKey = GlobalKey();
 
@@ -62,7 +33,7 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
   void initState() {
     super.initState();
 
-    _internalController = TargetController(vsync: this);
+    _internalController = FloatingTargetController(vsync: this);
   }
 
   @override

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:mek_floating_drag/src/fly_zone.dart';
-import 'package:mek_floating_drag/src/fly_zone_controller.dart';
+import 'package:mek_floating_drag/src/darts/floating_dart_controller.dart';
+import 'package:mek_floating_drag/src/fly_zones/fly_zone.dart';
+import 'package:mek_floating_drag/src/fly_zones/fly_zone_controller.dart';
 import 'package:mek_floating_drag/src/utils/listener_subscription.dart';
 import 'package:mek_floating_drag/src/utils/offset_resolver.dart';
 
@@ -10,7 +11,7 @@ typedef FloatingDartBuilder = Widget Function(BuildContext context, Widget child
 typedef FloatingEdgesResolver = EdgeInsets Function(Size containerSize, Size childSize);
 
 class FloatingDart extends StatefulWidget {
-  final DartController? controller;
+  final FloatingDartController? controller;
   final FloatingEdgesResolver retractEdgesResolver;
   final FloatingEdgesResolver elasticEdgesResolver;
   final FloatingEdgesResolver naturalEdgesResolver;
@@ -42,8 +43,8 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   );
 
   FlyZoneController? _flyZoneController;
-  DartController? _internalController;
-  DartController get controller => (widget.controller ?? _internalController)!;
+  FloatingDartController? _internalController;
+  FloatingDartController get controller => (widget.controller ?? _internalController)!;
 
   final subscriptions = <ListenerSubscription>[];
 
@@ -67,7 +68,7 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   void initState() {
     super.initState();
 
-    if (widget.controller == null) _internalController = DartController(vsync: this);
+    if (widget.controller == null) _internalController = FloatingDartController(vsync: this);
 
     _overlayEntries.addAll(widget.builders.map((e) => OverlayEntry(builder: e)));
     _overlayEntries.add(_childEntry);
@@ -254,9 +255,6 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
         child: current,
       );
     }
-    NotificationListener;
-    ScrollNotification;
-    ScrollController;
 
     if (_naturalElasticAnimation != null) {
       return ValueListenableBuilder<Offset>(

@@ -1,47 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-class FlyZoneController extends ChangeNotifier {
-  final _dartControllers = <DartController>[];
-  final _targetControllers = <TargetController>[];
-
-  List<DartController> get dartControllers => List.unmodifiable(_dartControllers);
-  List<TargetController> get targetControllers => List.unmodifiable(_targetControllers);
-
-  void attachDart(DartController controller) {
-    _dartControllers.add(controller);
-    controller.isDragging.addListener(_listenDartVisibility);
-    notifyListeners();
-  }
-
-  void detachDart(DartController controller) {
-    controller.isDragging.removeListener(_listenDartVisibility);
-    _dartControllers.remove(controller);
-    notifyListeners();
-  }
-
-  void attachTarget(TargetController controller) {
-    _targetControllers.add(controller);
-    notifyListeners();
-  }
-
-  void detachTarget(TargetController controller) {
-    _targetControllers.remove(controller);
-    notifyListeners();
-  }
-
-  void _listenDartVisibility() {
-    final isDragging = _dartControllers.any((e) => e.isDragging.value);
-    for (final controller in _targetControllers) {
-      if (isDragging) {
-        controller.show();
-      } else {
-        controller.hide();
-      }
-    }
-  }
-}
-
-class DartController {
+class FloatingDartController {
   final TickerProvider _vsync;
   Object? _animationKey;
 
@@ -65,7 +24,7 @@ class DartController {
   late final _restrictController = AnimationController(vsync: _vsync);
   Animation<double> get restrictAnimation => _restrictController.view;
 
-  DartController({
+  FloatingDartController({
     required TickerProvider vsync,
     Duration duration = const Duration(milliseconds: 300),
     Duration? visibilityDuration,
@@ -155,43 +114,5 @@ class DartController {
   void dispose() {
     _naturalElasticController.dispose();
     _restrictController.dispose();
-  }
-}
-
-class TargetController {
-  final TickerProvider _vsync;
-
-  final Duration _visibilityDuration;
-  final Curve _visibilityCurve;
-
-  late final _visibilityController = AnimationController(vsync: _vsync);
-  Animation<double> get visibilityAnimation => _visibilityController.view;
-
-  TargetController({
-    required TickerProvider vsync,
-    Duration visibilityDuration = const Duration(milliseconds: 300),
-    Curve visibilityCurve = Curves.easeInToLinear,
-  })  : _vsync = vsync,
-        _visibilityDuration = visibilityDuration,
-        _visibilityCurve = visibilityCurve;
-
-  Future<void> show() async {
-    await _visibilityController.animateTo(
-      1.0,
-      duration: _visibilityDuration,
-      curve: _visibilityCurve,
-    );
-  }
-
-  Future<void> hide() async {
-    await _visibilityController.animateTo(
-      0.0,
-      duration: _visibilityDuration,
-      curve: _visibilityCurve,
-    );
-  }
-
-  void dispose() {
-    _visibilityController.dispose();
   }
 }
