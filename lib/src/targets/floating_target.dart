@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/darts/floating_dart.dart';
 import 'package:mek_floating_drag/src/fly_zones/fly_zone.dart';
-import 'package:mek_floating_drag/src/fly_zones/fly_zone_controller.dart';
 import 'package:mek_floating_drag/src/targets/floating_target_controller.dart';
 
 class FloatingTarget extends StatefulWidget {
@@ -19,7 +18,9 @@ class FloatingTarget extends StatefulWidget {
 }
 
 class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStateMixin {
-  FlyZoneController? _flyZoneController;
+  FlyZoneScope? _maybeFlyZone;
+  FlyZoneScope get _flyZone => _maybeFlyZone!;
+
   FloatingTargetController? _internalController;
   FloatingTargetController get _controller => (widget.controller ?? _internalController)!;
 
@@ -39,12 +40,12 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final flyZoneController = FlyZone.of(context);
+    final flyZone = FlyZone.of(context);
 
-    if (_flyZoneController != flyZoneController) {
-      _flyZoneController?.detachTarget(_controller);
-      _flyZoneController = flyZoneController;
-      _flyZoneController?.attachTarget(_controller);
+    if (_maybeFlyZone != flyZone) {
+      _maybeFlyZone?.controller.detachTarget(_controller);
+      _maybeFlyZone = flyZone;
+      _maybeFlyZone?.controller.attachTarget(_controller);
     }
   }
 
@@ -52,8 +53,8 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
   void didUpdateWidget(FloatingTarget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
-      _flyZoneController?.detachTarget((oldWidget.controller ?? _internalController)!);
-      _flyZoneController?.attachTarget(_controller);
+      _flyZone.controller.detachTarget((oldWidget.controller ?? _internalController)!);
+      _flyZone.controller.attachTarget(_controller);
     }
   }
 
@@ -65,7 +66,9 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
       ..begin = to
       ..end = from);
 
-    dartController.hide();
+    await dartController.hide();
+
+    dartController.updatePosition(to);
   }
 
   @override
@@ -94,7 +97,7 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
     final target = DragTarget<FloatingDartState>(
       onWillAccept: (data) => data is FloatingDartState,
       onAccept: (dartState) {
-        final containerBox = dartState.containerBox;
+        final flyZoneBox = _flyZone.renderBox;
         final planeBox = dartState.childBox;
 
         final childBox = _childKey.currentContext!.findRenderObject() as RenderBox;
@@ -102,7 +105,7 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
 
         final childGlobalOffset = childBox
             .localToGlobal(childBox.size.center(Offset.zero) - planeBox.size.center(Offset.zero));
-        final childInContainer = containerBox.globalToLocal(childGlobalOffset);
+        final childInContainer = flyZoneBox.globalToLocal(childGlobalOffset);
 
         _startDartAnimation(dartState, offset, childInContainer);
 

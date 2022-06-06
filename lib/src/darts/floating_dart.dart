@@ -1,8 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/darts/floating_dart_controller.dart';
 import 'package:mek_floating_drag/src/fly_zones/fly_zone.dart';
-import 'package:mek_floating_drag/src/fly_zones/fly_zone_controller.dart';
 import 'package:mek_floating_drag/src/utils/listener_subscription.dart';
 import 'package:mek_floating_drag/src/utils/offset_resolver.dart';
 
@@ -12,20 +10,20 @@ typedef FloatingEdgesResolver = EdgeInsets Function(Size containerSize, Size chi
 
 class FloatingDart extends StatefulWidget {
   final FloatingDartController? controller;
+  final Offset initialPosition;
   final FloatingEdgesResolver retractEdgesResolver;
   final FloatingEdgesResolver elasticEdgesResolver;
   final FloatingEdgesResolver naturalEdgesResolver;
-  final List<WidgetBuilder> builders;
-  final WidgetBuilder builder;
+  final Widget child;
 
   const FloatingDart({
     Key? key,
     this.controller,
+    this.initialPosition = const Offset(20.0, 20.0),
     this.retractEdgesResolver = buildEmptyEdges,
     this.elasticEdgesResolver = buildEmptyEdges,
     this.naturalEdgesResolver = buildEmptyEdges,
-    this.builders = const <WidgetBuilder>[],
-    required this.builder,
+    required this.child,
   }) : super(key: key);
 
   static EdgeInsets buildEmptyEdges(Size _, Size __) {
@@ -37,12 +35,9 @@ class FloatingDart extends StatefulWidget {
 }
 
 class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixin {
-  final _overlayEntries = <OverlayEntry>[];
-  late final _childEntry = OverlayEntry(
-    builder: _build,
-  );
+  FlyZoneScope? _maybeFlyZone;
+  FlyZoneScope get _flyZone => _maybeFlyZone!;
 
-  FlyZoneController? _flyZoneController;
   FloatingDartController? _internalController;
   FloatingDartController get controller => (widget.controller ?? _internalController)!;
 
@@ -53,12 +48,12 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
 
   final _childKey = GlobalKey();
 
-  RenderBox get containerBox => context.findRenderObject() as RenderBox;
   RenderBox get childBox => _childKey.currentContext!.findRenderObject() as RenderBox;
 
   TransitionBuilder? _builder;
 
-  set builder(TransitionBuilder value) {
+  set builder(TransitionBuilder? value) {
+    if (_builder == value) return;
     setState(() => _builder = value);
   }
 
@@ -70,21 +65,18 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
 
     if (widget.controller == null) _internalController = FloatingDartController(vsync: this);
 
-    _overlayEntries.addAll(widget.builders.map((e) => OverlayEntry(builder: e)));
-    _overlayEntries.add(_childEntry);
-
     _initControllerListeners();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final flyZoneController = FlyZone.of(context);
+    final flyZone = FlyZone.of(context);
 
-    if (_flyZoneController != flyZoneController) {
-      _flyZoneController?.detachDart(controller);
-      _flyZoneController = flyZoneController;
-      _flyZoneController?.attachDart(controller);
+    if (_maybeFlyZone?.controller != flyZone.controller) {
+      _maybeFlyZone?.controller.detachDart(controller);
+      _maybeFlyZone = flyZone;
+      _maybeFlyZone?.controller.attachDart(controller);
     }
   }
 
@@ -93,8 +85,8 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
       _disposeControllerListeners();
-      _flyZoneController?.detachDart((oldWidget.controller ?? _internalController)!);
-      _flyZoneController?.attachDart(controller);
+      _flyZone.controller.detachDart((oldWidget.controller ?? _internalController)!);
+      _flyZone.controller.attachDart(controller);
       _initControllerListeners();
     }
   }
@@ -107,6 +99,18 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   }
 
   void _initControllerListeners() {
+    controller.visibilityAnimation.listenStatus((status) {
+      switch (status) {
+        case AnimationStatus.dismissed:
+        case AnimationStatus.forward:
+        case AnimationStatus.reverse:
+          break;
+        case AnimationStatus.completed:
+          builder = null;
+          break;
+      }
+    }).addTo(subscriptions);
+
     controller.naturalElasticAnimation.listenStatus((status) {
       switch (status) {
         case AnimationStatus.forward:
@@ -153,7 +157,7 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   }
 
   void _startNaturalElasticAnimation() {
-    final containerSize = containerBox.size;
+    final containerSize = _flyZone.renderBox.size;
     final childSize = childBox.size;
     final currentOffset = controller.position.value;
     var targetOffset = currentOffset;
@@ -180,7 +184,7 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   }
 
   void _startRestrictAnimation() {
-    final containerSize = containerBox.size;
+    final containerSize = _flyZone.renderBox.size;
     final childSize = childBox.size;
     final currentOffset = controller.position.value;
 
@@ -225,13 +229,16 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     );
   }
 
-  Widget _build(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
     // TODO: Remove widget on tree when it is never visible
-    // if (!_controller.isVisible.value) return const SizedBox.shrink();
+    if (controller.visibilityAnimation.value == 0.0) {
+      return const SizedBox.shrink();
+    }
 
     Widget current = KeyedSubtree(
       key: _childKey,
-      child: widget.builder(context),
+      child: widget.child,
     );
 
     current = Draggable(
@@ -272,12 +279,5 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     }
 
     return _buildPositioned(context, controller.position.value, current);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Overlay(
-      initialEntries: _overlayEntries,
-    );
   }
 }

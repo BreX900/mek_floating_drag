@@ -11,9 +11,7 @@ class RestrictedFlyZone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final flyZoneController = FlyZone.of(context);
-
-    if (flyZoneController == null) return child;
+    final flyZoneController = FlyZone.of(context).controller;
 
     return Listener(
       onPointerDown: (_) {

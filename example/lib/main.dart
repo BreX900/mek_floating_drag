@@ -47,54 +47,50 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultFlyZone(
-      child: Stack(
-        children: [
-          Scaffold(
-            appBar: AppBar(
-              actions: [
-                Builder(builder: (context) {
-                  return IconButton(
-                    onPressed: () => _dartController.show(),
-                    icon: const Icon(Icons.add),
-                  );
-                }),
-              ],
-            ),
-            body: RestrictedFlyZone(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: Colors.primaries.map((color) {
-                    return Container(
-                      height: 100.0,
-                      color: color,
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-          ),
-          FloatingDart(
-            controller: _dartController,
-            naturalEdgesResolver: (containerSize, childSize) {
-              return const EdgeInsets.symmetric(horizontal: double.nan, vertical: 64.0);
-            },
-            elasticEdgesResolver: (containerSize, childSize) {
-              return const EdgeInsets.symmetric(horizontal: 0.0, vertical: double.nan);
-            },
-            retractEdgesResolver: (containerSize, childSize) {
-              return EdgeInsets.symmetric(
-                  horizontal: -(0.60 * childSize.width), vertical: double.nan);
-            },
-            builders: [_build],
-            builder: (context) {
-              return FloatingActionButton(
-                onPressed: () {},
-              );
-            },
+    final scaffold = Scaffold(
+      appBar: AppBar(
+        actions: [
+          IconButton(
+            onPressed: () => _dartController.show(),
+            icon: const Icon(Icons.add),
           ),
         ],
       ),
+      body: RestrictedFlyZone(
+        child: SingleChildScrollView(
+          child: Column(
+            children: Colors.primaries.map((color) {
+              return Container(
+                height: 100.0,
+                color: color,
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+
+    return FlyZone.stacked(
+      entries: [
+        _build(context),
+        FloatingDart(
+          controller: _dartController,
+          naturalEdgesResolver: (containerSize, childSize) {
+            return const EdgeInsets.symmetric(horizontal: double.nan, vertical: 64.0);
+          },
+          elasticEdgesResolver: (containerSize, childSize) {
+            return const EdgeInsets.symmetric(horizontal: 0.0, vertical: double.nan);
+          },
+          retractEdgesResolver: (containerSize, childSize) {
+            return EdgeInsets.symmetric(
+                horizontal: -(0.60 * childSize.width), vertical: double.nan);
+          },
+          child: FloatingActionButton(
+            onPressed: () {},
+          ),
+        ),
+      ],
+      child: scaffold,
     );
   }
 }
