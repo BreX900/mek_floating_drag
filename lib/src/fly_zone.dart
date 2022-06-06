@@ -10,14 +10,8 @@ class FlyZone extends InheritedWidget {
     required Widget child,
   }) : super(key: key, child: child);
 
-  static FlyZoneController of(BuildContext context, {bool listen = true}) {
-    FlyZone flyZone;
-    if (listen) {
-      flyZone = context.dependOnInheritedWidgetOfExactType<FlyZone>()!;
-    } else {
-      flyZone = context.findAncestorWidgetOfExactType<FlyZone>()!;
-    }
-    return flyZone.controller;
+  static FlyZoneController? of(BuildContext context, {bool listen = true}) {
+    return context.dependOnInheritedWidgetOfExactType<FlyZone>()?.controller;
   }
 
   @override
