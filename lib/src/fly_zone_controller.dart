@@ -4,6 +4,9 @@ class FlyZoneController extends ChangeNotifier {
   final _dartControllers = <DartController>[];
   final _targetControllers = <TargetController>[];
 
+  List<DartController> get dartControllers => List.unmodifiable(_dartControllers);
+  List<TargetController> get targetControllers => List.unmodifiable(_targetControllers);
+
   void attachDart(DartController controller) {
     _dartControllers.add(controller);
     controller.isDragging.addListener(_listenDartVisibility);
@@ -26,10 +29,6 @@ class FlyZoneController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void attachScroll(ScrollController controller) {
-    controller.addListener(_listenScrollController);
-  }
-
   void _listenDartVisibility() {
     final isDragging = _dartControllers.any((e) => e.isDragging.value);
     for (final controller in _targetControllers) {
@@ -38,12 +37,6 @@ class FlyZoneController extends ChangeNotifier {
       } else {
         controller.hide();
       }
-    }
-  }
-
-  void _listenScrollController() {
-    for (final controller in _dartControllers) {
-      controller.animateRestrict();
     }
   }
 }
@@ -77,8 +70,8 @@ class DartController {
     Duration duration = const Duration(milliseconds: 300),
     Duration? visibilityDuration,
     Duration? naturalElasticDuration,
-    Curve naturalElasticCurve = Curves.bounceInOut,
-    Duration restrictAfter = const Duration(seconds: 2),
+    Curve naturalElasticCurve = Curves.bounceOut,
+    Duration restrictAfter = const Duration(seconds: 3),
     Duration? restrictDuration,
     Curve restrictCurve = Curves.linearToEaseOut,
   })  : _vsync = vsync,
@@ -113,6 +106,7 @@ class DartController {
   }
 
   Future<void> animateElastic() async {
+    if (_naturalElasticController.isAnimating) return;
     _animationKey = null;
     _restrictController.stop();
     _naturalElasticController.reset();
@@ -125,8 +119,9 @@ class DartController {
   }
 
   Future<void> animateRestrict() async {
+    if (_restrictController.isAnimating) return;
     _animationKey = null;
-    _restrictController.stop();
+    _naturalElasticController.stop();
     _restrictController.reset();
 
     await _restrictController.animateTo(
@@ -174,7 +169,7 @@ class TargetController {
 
   TargetController({
     required TickerProvider vsync,
-    Duration visibilityDuration = const Duration(milliseconds: 250),
+    Duration visibilityDuration = const Duration(milliseconds: 300),
     Curve visibilityCurve = Curves.easeInToLinear,
   })  : _vsync = vsync,
         _visibilityDuration = visibilityDuration,
@@ -194,5 +189,9 @@ class TargetController {
       duration: _visibilityDuration,
       curve: _visibilityCurve,
     );
+  }
+
+  void dispose() {
+    _visibilityController.dispose();
   }
 }

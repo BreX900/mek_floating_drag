@@ -225,6 +225,7 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   }
 
   Widget _build(BuildContext context) {
+    // TODO: Remove widget on tree when it is never visible
     // if (!_controller.isVisible.value) return const SizedBox.shrink();
 
     Widget current = KeyedSubtree(
@@ -253,6 +254,9 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
         child: current,
       );
     }
+    NotificationListener;
+    ScrollNotification;
+    ScrollController;
 
     if (_naturalElasticAnimation != null) {
       return ValueListenableBuilder<Offset>(

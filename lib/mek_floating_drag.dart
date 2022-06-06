@@ -2,7 +2,6 @@
 
 library lib;
 
-export 'src/floating_border.dart';
 export 'src/floating_dart.dart';
 export 'src/floating_target.dart';
 export 'src/fly_zone.dart';

@@ -99,6 +99,7 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
 
   @override
   void dispose() {
+    _internalController?.dispose();
     super.dispose();
   }
 
@@ -116,8 +117,6 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
       ),
     );
   }
-
-  Widget _buildFighter(BuildContext context) => widget.builder(context);
 
   @override
   Widget build(BuildContext context) {
@@ -138,9 +137,7 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
 
         dartState.builder = _buildDartAnimation;
       },
-      builder: (context, candidate, rejected) {
-        return _buildFighter(context);
-      },
+      builder: (context, candidate, rejected) => widget.builder(context),
     );
 
     return AnimatedBuilder(
