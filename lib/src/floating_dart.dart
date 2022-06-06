@@ -1,7 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/fly_zone.dart';
 import 'package:mek_floating_drag/src/fly_zone_controller.dart';
 import 'package:mek_floating_drag/src/utils/offset_resolver.dart';
+
+typedef FloatingDartBuilder = Widget Function(BuildContext context, Widget child);
 
 typedef FloatingEdgesResolver = EdgeInsets Function(Size containerSize, Size childSize);
 
@@ -35,131 +38,103 @@ class FloatingDart extends StatefulWidget {
 
 class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixin {
   final _overlayEntries = <OverlayEntry>[];
-
-  FlyZoneController? _controller;
-
-  final _childKey = GlobalKey();
   late final _childEntry = OverlayEntry(
     builder: _build,
   );
 
-  Object? _animationKey;
-  late AnimationController _positionController;
-  Animation<Offset>? _positionAnimation;
+  FlyZoneController? _flyZoneController;
+  late final DartController _controller;
+  DartController get controller => _controller;
 
-  bool _isVisible = true;
-  // Required because a Draggable widget is moved on widget tree
-  final _draggableKey = GlobalKey();
+  Animation<Offset>? _naturalElasticAnimation;
+  Animation<Offset>? _restrictAnimation;
+
+  final _childKey = GlobalKey();
 
   RenderBox get containerBox => context.findRenderObject() as RenderBox;
-
   RenderBox get childBox => _childKey.currentContext!.findRenderObject() as RenderBox;
+
+  TransitionBuilder? _builder;
+
+  set builder(TransitionBuilder value) {
+    setState(() => _builder = value);
+  }
+
+  final _draggableKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
 
+    _controller = DartController(vsync: this);
+
     _overlayEntries.addAll(widget.builders.map((e) => OverlayEntry(builder: e)));
     _overlayEntries.add(_childEntry);
 
-    _positionController = AnimationController(vsync: this);
+    _controller.naturalElasticAnimation.addStatusListener((status) {
+      switch (status) {
+        case AnimationStatus.forward:
+          _startNaturalElasticAnimation();
+          break;
+        case AnimationStatus.reverse:
+          break;
+        case AnimationStatus.dismissed:
+          setState(() => _naturalElasticAnimation = null);
+          break;
+        case AnimationStatus.completed:
+          setState(() => _naturalElasticAnimation = null);
+          _controller.animateRestrict();
+          break;
+      }
+    });
+    _controller.naturalElasticAnimation.addListener(() {
+      if (_naturalElasticAnimation == null) return;
+      _controller.position.value = _naturalElasticAnimation!.value;
+    });
 
-    _positionController.addListener(() {
-      if (_positionAnimation == null) return;
-      _controller!.dartPosition.value = _positionAnimation!.value;
+    _controller.restrictAnimation.addStatusListener((status) {
+      switch (status) {
+        case AnimationStatus.forward:
+          _startRestrictAnimation();
+          break;
+        case AnimationStatus.reverse:
+          break;
+        case AnimationStatus.dismissed:
+          setState(() => _restrictAnimation = null);
+          break;
+        case AnimationStatus.completed:
+          setState(() => _restrictAnimation = null);
+          break;
+      }
+    });
+    _controller.restrictAnimation.addListener(() {
+      if (_restrictAnimation == null) return;
+      _controller.position.value = _restrictAnimation!.value;
     });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final controller = FlyZone.of(context);
+    final flyZoneController = FlyZone.of(context);
 
-    if (_controller != controller) {
-      _controller?.dartVisibility.removeListener(_listenVisibility);
-      _controller = controller;
-      _controller!.dartVisibility.addListener(_listenVisibility);
+    if (_flyZoneController != flyZoneController) {
+      _flyZoneController?.detachDart(_controller);
+      _flyZoneController = flyZoneController;
+      _flyZoneController?.attachDart(_controller);
     }
   }
 
   @override
   void dispose() {
-    _positionController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
-  void _listenVisibility() {
-    final value = _controller!.dartVisibility.value;
-    _isVisible = value > 0;
-    _childEntry.markNeedsBuild();
-  }
-
-  void _stopAnimation() {
-    _animationKey = null;
-    _positionController.reset();
-  }
-
-  void _startAnimation(Offset currentOffset, Offset elasticOffset, Offset retractedOffset) async {
-    final animationKey = Object();
-    _animationKey = animationKey;
-
-    await _animateBetween(
-      currentOffset,
-      elasticOffset,
-      duration: widget.elasticDuration,
-      curve: widget.elasticCurve,
-    );
-
-    if (elasticOffset == retractedOffset) return;
-
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (_animationKey != animationKey) return;
-    await _animateBetween(
-      elasticOffset,
-      retractedOffset,
-      duration: widget.elasticDuration,
-      curve: Curves.linear,
-    );
-  }
-
-  Future<void> _animateBetween(
-    Offset from,
-    Offset to, {
-    required Duration duration,
-    required Curve curve,
-  }) async {
-    _positionAnimation = _positionController.drive(Tween(
-      begin: from,
-      end: to,
-    ));
-    await _positionController.animateTo(
-      1.0,
-      duration: duration,
-      curve: curve,
-    );
-
-    _positionAnimation = null;
-    _positionController.reset();
-  }
-
-  void _onPanStart() {
-    _stopAnimation();
-    _controller!.isDartDragging.value = true;
-  }
-
-  void _onPanUpdate(DragUpdateDetails details) {
-    _controller!.dartPosition.value += details.delta;
-  }
-
-  void _onPanEnd(DraggableDetails details) {
-    _controller!.isDartDragging.value = false;
-
-    if (_controller!.dartBuilder.value != null) return;
-
+  void _startNaturalElasticAnimation() {
     final containerSize = containerBox.size;
     final childSize = childBox.size;
-    final currentOffset = _controller!.dartPosition.value;
+    final currentOffset = controller.position.value;
     var targetOffset = currentOffset;
 
     final offsetResolver = OffsetResolver(
@@ -175,69 +150,106 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     final naturalEdges = widget.naturalEdgesResolver(containerSize, childSize);
     targetOffset = offsetResolver.getNaturalTarget(targetOffset, naturalEdges);
 
-    // Retracted Edges
-    final retractEdges = widget.retractEdgesResolver(containerSize, childSize);
-    final retractedOffset = offsetResolver.getRetractedTarget(targetOffset, retractEdges);
-
-    _startAnimation(currentOffset, targetOffset, retractedOffset);
+    setState(() {
+      _naturalElasticAnimation = _controller.naturalElasticAnimation.drive(Tween(
+        begin: currentOffset,
+        end: targetOffset,
+      ));
+    });
   }
 
-  Widget _buildPositioned(Offset offset, Widget child) {
+  void _startRestrictAnimation() {
+    final containerSize = containerBox.size;
+    final childSize = childBox.size;
+    final currentOffset = controller.position.value;
+
+    final offsetResolver = OffsetResolver(
+      containerSize: containerSize,
+      childSize: childBox.size,
+    );
+
+    // Retracted Edges
+    final retractEdges = widget.retractEdgesResolver(containerSize, childSize);
+    final retractedOffset = offsetResolver.getRetractedTarget(currentOffset, retractEdges);
+
+    setState(() {
+      _restrictAnimation = _controller.restrictAnimation.drive(Tween(
+        begin: currentOffset,
+        end: retractedOffset,
+      ));
+    });
+  }
+
+  void _onPanStart() {
+    _controller.dragStart();
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    _controller.dragUpdate(details.delta);
+  }
+
+  void _onPanEnd(DraggableDetails details) {
+    _controller.dragEnd();
+
+    if (_builder != null) return;
+
+    _controller.animateElastic();
+  }
+
+  Widget _buildPositioned(BuildContext context, Offset offset, Widget? child) {
     return Positioned(
       top: offset.dy,
       left: offset.dx,
-      child: child,
+      child: child!,
     );
   }
 
   Widget _build(BuildContext context) {
-    if (!_isVisible) return const SizedBox.shrink();
+    // if (!_controller.isVisible.value) return const SizedBox.shrink();
 
-    final child = KeyedSubtree(
+    Widget current = KeyedSubtree(
       key: _childKey,
       child: widget.builder(context),
     );
 
-    final draggable = Draggable(
+    current = Draggable(
       key: _draggableKey,
       rootOverlay: false,
       data: this,
       childWhenDragging: const SizedBox.shrink(),
-      feedback: child,
+      feedback: current,
       onDragStarted: _onPanStart,
       onDragUpdate: _onPanUpdate,
       onDragEnd: _onPanEnd,
-      child: child,
+      child: current,
     );
 
-    return ValueListenableBuilder<bool>(
-      valueListenable: _controller!.isDartDragging,
-      child: draggable,
-      builder: (context, isDragging, child) {
-        if (isDragging) {
-          return _buildPositioned(_controller!.dartPosition.value, child!);
-        }
-        return ValueListenableBuilder(
-          valueListenable: _controller!.dartBuilder,
-          child: child,
-          builder: (context, planeBuilder, child) {
-            final planeBuilder = _controller!.dartBuilder.value;
+    final animationBuilder = _builder;
 
-            if (planeBuilder != null) {
-              return planeBuilder(context, child!);
-            }
+    if (animationBuilder != null) {
+      return AnimatedBuilder(
+        animation: controller.visibilityAnimation,
+        builder: animationBuilder,
+        child: current,
+      );
+    }
 
-            return ValueListenableBuilder<Offset>(
-              valueListenable: _controller!.dartPosition,
-              child: planeBuilder?.call(context, child!) ?? child!,
-              builder: (context, offset, child) {
-                return _buildPositioned(offset, child!);
-              },
-            );
-          },
-        );
-      },
-    );
+    if (_naturalElasticAnimation != null) {
+      return ValueListenableBuilder<Offset>(
+        valueListenable: _naturalElasticAnimation!,
+        builder: _buildPositioned,
+        child: current,
+      );
+    }
+    if (_restrictAnimation != null) {
+      return ValueListenableBuilder<Offset>(
+        valueListenable: _restrictAnimation!,
+        builder: _buildPositioned,
+        child: current,
+      );
+    }
+
+    return _buildPositioned(context, controller.position.value, current);
   }
 
   @override

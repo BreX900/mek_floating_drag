@@ -7,3 +7,4 @@ export 'src/floating_dart.dart';
 export 'src/floating_target.dart';
 export 'src/fly_zone.dart';
 export 'src/fly_zone_controller.dart';
+export 'src/restricted_fly_zone.dart';

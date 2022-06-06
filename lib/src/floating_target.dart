@@ -40,27 +40,43 @@ class FloatingTarget extends StatefulWidget {
 }
 
 class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStateMixin {
-  FlyZoneController? _controller;
+  FlyZoneController? _flyZoneController;
+  late final TargetController _controller;
 
   final _childKey = GlobalKey();
-  late Animation<double> _scaleAnimation;
+
+  late Animation<double> _dartScaleAnimation;
   final _positionTween = Tween<Offset>(begin: Offset.zero, end: Offset.zero);
-  late Animation<Offset> _positionAnimation;
+  late Animation<Offset> _dartPositionAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = TargetController(vsync: this);
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final controller = FlyZone.of(context);
+    final flyZoneController = FlyZone.of(context);
 
-    if (_controller != controller) {
-      _controller = controller;
-      _initAnimation();
+    if (_flyZoneController != flyZoneController) {
+      _flyZoneController?.detachTarget(_controller);
+      _flyZoneController = flyZoneController;
+      _flyZoneController?.attachTarget(_controller);
     }
   }
 
-  void _initAnimation() {
-    _scaleAnimation = _controller!.dartVisibility.drive(Tween(begin: 0.0, end: 1.0));
-    _positionAnimation = _controller!.dartVisibility.drive(_positionTween);
+  void _startDartAnimation(FloatingDartState dartState, Offset from, Offset to) async {
+    final dartController = dartState.controller;
+
+    _dartScaleAnimation = dartController.visibilityAnimation.drive(Tween(begin: 0.0, end: 1.0));
+    _dartPositionAnimation = dartController.visibilityAnimation.drive(_positionTween
+      ..begin = to
+      ..end = from);
+
+    dartController.hide();
   }
 
   @override
@@ -68,29 +84,18 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
     super.dispose();
   }
 
-  Widget _buildEndAnimation(BuildContext context, Widget child) {
-    final animatedVisibility = AnimatedBuilder(
-      animation: _controller!.dartVisibility,
-      child: child,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          transformHitTests: false,
-          child: child,
-        );
-      },
-    );
+  Widget _buildDartAnimation(BuildContext context, Widget? child) {
+    final offset = _dartPositionAnimation.value;
+    final scale = _dartScaleAnimation.value;
 
-    return ValueListenableBuilder<Offset>(
-      valueListenable: _positionAnimation,
-      child: animatedVisibility,
-      builder: (context, offset, child) {
-        return Positioned(
-          top: offset.dy,
-          left: offset.dx,
-          child: child!,
-        );
-      },
+    return Positioned(
+      top: offset.dy,
+      left: offset.dx,
+      child: Transform.scale(
+        scale: scale,
+        transformHitTests: false,
+        child: child,
+      ),
     );
   }
 
@@ -100,29 +105,20 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
   Widget build(BuildContext context) {
     final target = DragTarget<FloatingDartState>(
       onWillAccept: (data) => data is FloatingDartState,
-      onAccept: (data) {
-        final containerBox = data.containerBox;
-        final planeBox = data.childBox;
+      onAccept: (dartState) {
+        final containerBox = dartState.containerBox;
+        final planeBox = dartState.childBox;
 
         final childBox = _childKey.currentContext!.findRenderObject() as RenderBox;
-        final offset = _controller!.dartPosition.value;
+        final offset = dartState.controller.position.value;
 
         final childGlobalOffset = childBox
             .localToGlobal(childBox.size.center(Offset.zero) - planeBox.size.center(Offset.zero));
         final childInContainer = containerBox.globalToLocal(childGlobalOffset);
 
-        final childCenter = Offset(
-          childInContainer.dx, // + childBox.size.width,
-          childInContainer.dy, // + childBox.size.height,
-        );
+        _startDartAnimation(dartState, offset, childInContainer);
 
-        _positionTween
-          ..begin = childCenter
-          ..end = offset;
-
-        _controller!.dartBuilder.value = _buildEndAnimation;
-
-        _controller!.dartVisibility.reverse();
+        dartState.builder = _buildDartAnimation;
       },
       builder: (context, candidate, rejected) {
         return _buildFighter(context);
@@ -130,11 +126,11 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
     );
 
     return AnimatedBuilder(
-      animation: _controller!.targetVisibility,
+      animation: _controller.visibilityAnimation,
       child: target,
       builder: (context, child) {
         return Transform.scale(
-          scale: _controller!.targetVisibility.value,
+          scale: _controller.visibilityAnimation.value,
           child: Center(
             child: KeyedSubtree(
               key: _childKey,

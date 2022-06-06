@@ -1,8 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/fly_zone_controller.dart';
 
-typedef FloatingBuilder = Widget Function(BuildContext context, Widget child);
-
 class FlyZone extends InheritedWidget {
   final FlyZoneController controller;
 
@@ -46,7 +44,7 @@ class _DefaultFlyZoneState extends State<DefaultFlyZone> with TickerProviderStat
   @override
   void initState() {
     super.initState();
-    _controller = FlyZoneController(vsync: this);
+    _controller = FlyZoneController();
   }
 
   @override
@@ -55,9 +53,9 @@ class _DefaultFlyZoneState extends State<DefaultFlyZone> with TickerProviderStat
     if (widget.initialPosition != oldWidget.initialPosition) {
       _controller.dispose();
       _controller = FlyZoneController(
-        initialPosition: widget.initialPosition,
-        vsync: this,
-      );
+          // initialPosition: widget.initialPosition,
+          // vsync: this,
+          );
     }
   }
 

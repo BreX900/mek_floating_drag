@@ -40,22 +40,24 @@ class MyHomePage extends StatelessWidget {
           Scaffold(
             appBar: AppBar(
               actions: [
-                Builder(builder: (context) {
-                  return IconButton(
-                    onPressed: () => FlyZone.of(context).show(),
-                    icon: const Icon(Icons.add),
-                  );
-                }),
+                // Builder(builder: (context) {
+                //   return IconButton(
+                //     onPressed: () => FlyZone.of(context).show(),
+                //     icon: const Icon(Icons.add),
+                //   );
+                // }),
               ],
             ),
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const <Widget>[
-                  Text(
-                    'You have pushed the button this many times:',
-                  ),
-                ],
+            body: RestrictedFlyZone(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: Colors.primaries.map((color) {
+                    return Container(
+                      height: 100.0,
+                      color: color,
+                    );
+                  }).toList(),
+                ),
               ),
             ),
           ),
