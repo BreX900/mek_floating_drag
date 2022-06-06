@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/darts/floating_dart.dart';
 import 'package:mek_floating_drag/src/fly_zones/fly_zone.dart';
+import 'package:mek_floating_drag/src/fly_zones/fly_zone_scope.dart';
 import 'package:mek_floating_drag/src/targets/floating_target_controller.dart';
 import 'package:mek_floating_drag/src/utils/listener_subscription.dart';
 

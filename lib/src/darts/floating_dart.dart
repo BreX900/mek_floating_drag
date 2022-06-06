@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/darts/floating_dart_controller.dart';
 import 'package:mek_floating_drag/src/fly_zones/fly_zone.dart';
+import 'package:mek_floating_drag/src/fly_zones/fly_zone_scope.dart';
 import 'package:mek_floating_drag/src/utils/listener_subscription.dart';
 import 'package:mek_floating_drag/src/utils/offset_resolver.dart';
 
@@ -69,7 +68,7 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     super.didChangeDependencies();
     final flyZone = FlyZone.of(context);
 
-    if (_maybeFlyZone?.controller != flyZone.controller) {
+    if (_maybeFlyZone?.controller != flyZone?.controller) {
       _maybeFlyZone?.controller.detachDart(controller);
       _maybeFlyZone = flyZone;
       _maybeFlyZone?.controller.attachDart(controller);

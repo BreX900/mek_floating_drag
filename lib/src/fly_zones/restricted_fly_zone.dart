@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/mek_floating_drag.dart';
 
@@ -11,7 +12,9 @@ class RestrictedFlyZone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final flyZoneController = FlyZone.of(context).controller;
+    final flyZoneController = FlyZone.of(context)?.controller;
+
+    if (flyZoneController == null) return child;
 
     return Listener(
       onPointerDown: (_) {

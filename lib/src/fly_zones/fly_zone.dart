@@ -1,57 +1,58 @@
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/fly_zones/fly_zone_controller.dart';
+import 'package:mek_floating_drag/src/fly_zones/fly_zone_scope.dart';
 
-class FlyZone extends StatefulWidget {
+abstract class FlyZone implements Widget {
+  const factory FlyZone({
+    Key? key,
+    FlyZoneController? controller,
+    required Widget child,
+  }) = _BasicFlyZone;
+
+  const factory FlyZone.inStack({
+    Key? key,
+    FlyZoneController? controller,
+    required List<Widget> entries,
+    required Widget child,
+  }) = _FlyZoneInStack;
+
+  const factory FlyZone.inOverlay({
+    Key? key,
+    FlyZoneController? controller,
+    required List<Widget> entries,
+    required Widget child,
+  }) = _FlyZoneInOverlay;
+
+  static FlyZoneScope? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<FlyZoneScope>();
+  }
+}
+
+class _BasicFlyZone extends StatefulWidget implements FlyZone {
   final FlyZoneController? controller;
+  final void Function(FlyZoneController controller, ValueGetter<RenderBox> renderBoxGetter)?
+      onSetup;
   final Widget child;
 
-  const FlyZone({
+  const _BasicFlyZone({
     Key? key,
     this.controller,
+    this.onSetup,
     required this.child,
   }) : super(key: key);
 
-  FlyZone.stacked({
-    Key? key,
-    this.controller,
-    required List<Widget> entries,
-    required Widget child,
-  })  : child = _buildWithStack(entries, child),
-        super(key: key);
-
-  // FlyZone.inOverlay({
-  //   Key? key,
-  //   this.controller,
-  //   required List<Widget> entries,
-  //   required Widget child,
-  // })  : child = _FlyZoneInOverlay(entries: entries, child: child),
-  //       super(key: key);
-
-  static FlyZoneScope of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<FlyZoneScope>()!;
-  }
-
-  static Widget _buildWithStack(List<Widget> entries, Widget child) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        child,
-        ...entries,
-      ],
-    );
-  }
-
   @override
-  State<FlyZone> createState() => _FlyZoneState();
+  State<_BasicFlyZone> createState() => _BasicFlyZoneState();
 }
 
-class _FlyZoneState extends State<FlyZone> {
+class _BasicFlyZoneState extends State<_BasicFlyZone> {
   late FlyZoneController _controller;
 
   @override
   void initState() {
     super.initState();
     _controller = FlyZoneController();
+    widget.onSetup?.call(_controller, getRenderBox);
   }
 
   @override
@@ -72,77 +73,105 @@ class _FlyZoneState extends State<FlyZone> {
   }
 }
 
-class FlyZoneScope extends InheritedWidget {
-  final FlyZoneController controller;
-  final RenderBox Function() _renderBoxGetter;
+class _FlyZoneInStack extends StatelessWidget implements FlyZone {
+  final FlyZoneController? controller;
+  final List<Widget> entries;
+  final Widget child;
 
-  RenderBox get renderBox => _renderBoxGetter();
-
-  const FlyZoneScope({
+  const _FlyZoneInStack({
     Key? key,
-    required this.controller,
-    required RenderBox Function() renderBoxGetter,
-    required Widget child,
-  })  : _renderBoxGetter = renderBoxGetter,
-        super(key: key, child: child);
+    this.controller,
+    required this.entries,
+    required this.child,
+  }) : super(key: key);
 
   @override
-  bool updateShouldNotify(FlyZoneScope oldWidget) =>
-      controller != oldWidget.controller || _renderBoxGetter != oldWidget._renderBoxGetter;
+  Widget build(BuildContext context) {
+    return _BasicFlyZone(
+      controller: controller,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          child,
+          ...entries,
+        ],
+      ),
+    );
+  }
 }
 
-// class _FlyZoneInOverlay extends StatefulWidget {
-//   final List<Widget> entries;
-//   final Widget child;
-//
-//   const _FlyZoneInOverlay({
-//     Key? key,
-//     required this.entries,
-//     required this.child,
-//   }) : super(key: key);
-//
-//   @override
-//   State<_FlyZoneInOverlay> createState() => _FlyZoneInOverlayState();
-// }
-//
-// class _FlyZoneInOverlayState extends State<_FlyZoneInOverlay> {
-//   late final OverlayEntry _entry;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//
-//     _entry = OverlayEntry(builder: _buildEntries);
-//
-//     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-//       Overlay.of(context)!.insert(_entry);
-//     });
-//   }
-//
-//   @override
-//   void didChangeDependencies() {
-//     super.didChangeDependencies();
-//   }
-//
-//   @override
-//   void dispose() {
-//     _entry.remove();
-//     super.dispose();
-//   }
-//
-//   @override
-//   void didUpdateWidget(_FlyZoneInOverlay oldWidget) {
-//     super.didUpdateWidget(oldWidget);
-//   }
-//
-//   Widget _buildEntries(BuildContext context) {
-//     return Stack(
-//       children: widget.entries,
-//     );
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return widget.child;
-//   }
-// }
+class _FlyZoneInOverlay extends StatefulWidget implements FlyZone {
+  final FlyZoneController? controller;
+  final List<Widget> entries;
+  final Widget child;
+
+  const _FlyZoneInOverlay({
+    Key? key,
+    this.controller,
+    required this.entries,
+    required this.child,
+  }) : super(key: key);
+
+  @override
+  State<_FlyZoneInOverlay> createState() => _FlyZoneInOverlayState();
+}
+
+class _FlyZoneInOverlayState extends State<_FlyZoneInOverlay> {
+  late final OverlayEntry _entry;
+
+  FlyZoneController? _controller;
+  RenderBox Function()? _renderBoxGetter;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _entry = OverlayEntry(builder: _buildEntries);
+
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      Overlay.of(context)!.insert(_entry);
+    });
+  }
+
+  @override
+  void didUpdateWidget(_FlyZoneInOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  void dispose() {
+    _entry.remove();
+
+    super.dispose();
+  }
+
+  Widget _buildEntries(BuildContext context) {
+    return _BasicFlyZone(
+      controller: widget.controller,
+      onSetup: (controller, renderBoxGetter) {
+        if (_controller == controller && _renderBoxGetter == renderBoxGetter) return;
+        WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+          setState(() {
+            _controller = controller;
+            _renderBoxGetter = renderBoxGetter;
+          });
+        });
+      },
+      child: Stack(
+        children: widget.entries,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_controller == null || _renderBoxGetter == null) {
+      return widget.child;
+    }
+    return FlyZoneScope(
+      controller: _controller!,
+      renderBoxGetter: _renderBoxGetter!,
+      child: widget.child,
+    );
+  }
+}

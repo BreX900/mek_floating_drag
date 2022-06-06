@@ -47,16 +47,14 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           ),
         ],
       ),
-      body: RestrictedFlyZone(
-        child: SingleChildScrollView(
-          child: Column(
-            children: Colors.primaries.reversed.map((color) {
-              return Container(
-                height: 100.0,
-                color: color,
-              );
-            }).toList(),
-          ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: Colors.primaries.reversed.map((color) {
+            return Container(
+              height: 100.0,
+              color: color,
+            );
+          }).toList(),
         ),
       ),
     );
@@ -79,7 +77,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       ),
     );
 
-    return FlyZone.stacked(
+    return FlyZone.inStack(
       entries: [
         const Positioned(
           bottom: 16.0,
@@ -93,17 +91,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           child: dart,
         ),
       ],
-      child: scaffold,
+      child: RestrictedFlyZone(
+        child: scaffold,
+      ),
     );
-  }
-}
-
-class Test extends StatelessWidget {
-  const Test({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    print(MediaQuery.of(context).size);
-    return Container();
   }
 }
