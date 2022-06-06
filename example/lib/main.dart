@@ -89,8 +89,23 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
             onPressed: () {},
           ),
         ),
+        SizedBox(
+          height: 100,
+          width: 100,
+          child: Test(),
+        )
       ],
       child: scaffold,
     );
+  }
+}
+
+class Test extends StatelessWidget {
+  const Test({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    print(MediaQuery.of(context).size);
+    return Container();
   }
 }

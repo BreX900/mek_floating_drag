@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/darts/floating_dart.dart';
 import 'package:mek_floating_drag/src/fly_zones/fly_zone.dart';
 import 'package:mek_floating_drag/src/targets/floating_target_controller.dart';
+import 'package:mek_floating_drag/src/utils/listener_subscription.dart';
 
 class FloatingTarget extends StatefulWidget {
   final FloatingTargetController? controller;
@@ -66,9 +67,21 @@ class _FloatingTargetState extends State<FloatingTarget> with TickerProviderStat
       ..begin = to
       ..end = from);
 
-    await dartController.hide();
+    late ListenerSubscription subscription;
+    subscription = dartController.visibilityAnimation.listenStatus((status) {
+      switch (status) {
+        case AnimationStatus.forward:
+        case AnimationStatus.reverse:
+          break;
+        case AnimationStatus.completed:
+        case AnimationStatus.dismissed:
+          dartController.updatePosition(_dartPositionAnimation.value);
+          subscription.close();
+          break;
+      }
+    });
 
-    dartController.updatePosition(to);
+    await dartController.hide();
   }
 
   @override

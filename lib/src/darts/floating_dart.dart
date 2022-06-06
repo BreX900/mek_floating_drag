@@ -4,13 +4,10 @@ import 'package:mek_floating_drag/src/fly_zones/fly_zone.dart';
 import 'package:mek_floating_drag/src/utils/listener_subscription.dart';
 import 'package:mek_floating_drag/src/utils/offset_resolver.dart';
 
-typedef FloatingDartBuilder = Widget Function(BuildContext context, Widget child);
-
 typedef FloatingEdgesResolver = EdgeInsets Function(Size containerSize, Size childSize);
 
 class FloatingDart extends StatefulWidget {
   final FloatingDartController? controller;
-  final Offset initialPosition;
   final FloatingEdgesResolver retractEdgesResolver;
   final FloatingEdgesResolver elasticEdgesResolver;
   final FloatingEdgesResolver naturalEdgesResolver;
@@ -19,7 +16,6 @@ class FloatingDart extends StatefulWidget {
   const FloatingDart({
     Key? key,
     this.controller,
-    this.initialPosition = const Offset(20.0, 20.0),
     this.retractEdgesResolver = buildEmptyEdges,
     this.elasticEdgesResolver = buildEmptyEdges,
     this.naturalEdgesResolver = buildEmptyEdges,
@@ -119,9 +115,13 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
         case AnimationStatus.reverse:
           break;
         case AnimationStatus.dismissed:
+          if (_naturalElasticAnimation == null) return;
+          controller.position.value = _naturalElasticAnimation!.value;
           setState(() => _naturalElasticAnimation = null);
           break;
         case AnimationStatus.completed:
+          if (_naturalElasticAnimation == null) return;
+          controller.position.value = _naturalElasticAnimation!.value;
           setState(() => _naturalElasticAnimation = null);
           break;
       }
@@ -139,16 +139,16 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
         case AnimationStatus.reverse:
           break;
         case AnimationStatus.dismissed:
+          if (_restrictAnimation == null) return;
+          controller.position.value = _restrictAnimation!.value;
           setState(() => _restrictAnimation = null);
           break;
         case AnimationStatus.completed:
+          if (_restrictAnimation == null) return;
+          controller.position.value = _restrictAnimation!.value;
           setState(() => _restrictAnimation = null);
           break;
       }
-    }).addTo(subscriptions);
-    controller.restrictAnimation.listen(() {
-      if (_restrictAnimation == null) return;
-      controller.position.value = _restrictAnimation!.value;
     }).addTo(subscriptions);
   }
 
@@ -221,20 +221,42 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
     controller.animateElastic();
   }
 
-  Widget _buildPositioned(BuildContext context, Offset offset, Widget? child) {
+  Widget _buildAppearAnimation(BuildContext context, Widget child) {
+    return AnimatedBuilder(
+      animation: controller.visibilityAnimation,
+      child: child,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: controller.visibilityAnimation.value,
+          child: child,
+        );
+      },
+    );
+  }
+
+  Widget _buildPositioned(BuildContext context, Offset? offset, Widget? child) {
+    if (offset == null) return const SizedBox.shrink();
     return Positioned(
       top: offset.dy,
       left: offset.dx,
-      child: child!,
+      child: _buildAppearAnimation(context, child!),
+    );
+  }
+
+  Widget _buildListeningPositionChanges(BuildContext context, Widget child) {
+    return ValueListenableBuilder<Offset?>(
+      valueListenable: controller.position,
+      builder: _buildPositioned,
+      child: child,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     // TODO: Remove widget on tree when it is never visible
-    if (controller.visibilityAnimation.value == 0.0) {
-      return const SizedBox.shrink();
-    }
+    // if (controller.visibilityAnimation.value == 0.0) {
+    //   return const SizedBox.shrink();
+    // }
 
     Widget current = KeyedSubtree(
       key: _childKey,
@@ -278,6 +300,6 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
       );
     }
 
-    return _buildPositioned(context, controller.position.value, current);
+    return _buildListeningPositionChanges(context, current);
   }
 }

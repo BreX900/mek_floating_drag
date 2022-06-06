@@ -3,9 +3,10 @@ import 'package:flutter/widgets.dart';
 class FloatingDartController {
   final TickerProvider _vsync;
   Object? _animationKey;
+  final Offset initialOffset;
 
   final isDragging = ValueNotifier(false);
-  final position = ValueNotifier(Offset.zero);
+  late final position = ValueNotifier(initialOffset);
 
   final Duration _visibilityDuration;
 
@@ -26,6 +27,8 @@ class FloatingDartController {
 
   FloatingDartController({
     required TickerProvider vsync,
+    bool initialVisibility = true,
+    this.initialOffset = const Offset(20.0, 20.0),
     Duration duration = const Duration(milliseconds: 300),
     Duration? visibilityDuration,
     Duration? naturalElasticDuration,
@@ -39,6 +42,8 @@ class FloatingDartController {
         _naturalElasticCurve = naturalElasticCurve,
         _restrictDuration = restrictDuration ?? duration,
         _restrictCurve = restrictCurve {
+    _visibilityController.value = initialVisibility ? 1.0 : 0.0;
+
     naturalElasticAnimation.addStatusListener((status) async {
       switch (status) {
         case AnimationStatus.forward:
@@ -57,10 +62,17 @@ class FloatingDartController {
   }
 
   Future<void> show() async {
+    if (_visibilityController.status == AnimationStatus.forward) return;
+
+    _animationKey = null;
+    position.value = initialOffset;
     await _visibilityController.animateTo(1.0, duration: _visibilityDuration);
   }
 
   Future<void> hide() async {
+    if (_visibilityController.status == AnimationStatus.reverse) return;
+
+    _animationKey = null;
     await _visibilityController.animateTo(0.0, duration: _visibilityDuration);
   }
 
@@ -106,7 +118,7 @@ class FloatingDartController {
     isDragging.value = false;
   }
 
-  /// Internal
+  /// Update position only when dragging or animation is terminated
   void updatePosition(Offset value) {
     position.value = value;
   }

@@ -1,23 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/fly_zones/fly_zone_controller.dart';
 
-// class FlyZone extends InheritedWidget {
-//   final FlyZoneController controller;
-//
-//   const FlyZone({
-//     Key? key,
-//     required this.controller,
-//     required Widget child,
-//   }) : super(key: key, child: child);
-//
-//   static FlyZoneController? of(BuildContext context, {bool listen = true}) {
-//     return context.dependOnInheritedWidgetOfExactType<FlyZone>()?.controller;
-//   }
-//
-//   @override
-//   bool updateShouldNotify(FlyZone oldWidget) => controller != oldWidget.controller;
-// }
-
 class FlyZone extends StatefulWidget {
   final FlyZoneController? controller;
   final Widget child;
@@ -36,6 +19,18 @@ class FlyZone extends StatefulWidget {
   })  : child = _buildWithStack(entries, child),
         super(key: key);
 
+  // FlyZone.inOverlay({
+  //   Key? key,
+  //   this.controller,
+  //   required List<Widget> entries,
+  //   required Widget child,
+  // })  : child = _FlyZoneInOverlay(entries: entries, child: child),
+  //       super(key: key);
+
+  static FlyZoneScope of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<FlyZoneScope>()!;
+  }
+
   static Widget _buildWithStack(List<Widget> entries, Widget child) {
     return Stack(
       fit: StackFit.expand,
@@ -44,10 +39,6 @@ class FlyZone extends StatefulWidget {
         ...entries,
       ],
     );
-  }
-
-  static FlyZoneScope of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<FlyZoneScope>()!;
   }
 
   @override
@@ -99,3 +90,59 @@ class FlyZoneScope extends InheritedWidget {
   bool updateShouldNotify(FlyZoneScope oldWidget) =>
       controller != oldWidget.controller || _renderBoxGetter != oldWidget._renderBoxGetter;
 }
+
+// class _FlyZoneInOverlay extends StatefulWidget {
+//   final List<Widget> entries;
+//   final Widget child;
+//
+//   const _FlyZoneInOverlay({
+//     Key? key,
+//     required this.entries,
+//     required this.child,
+//   }) : super(key: key);
+//
+//   @override
+//   State<_FlyZoneInOverlay> createState() => _FlyZoneInOverlayState();
+// }
+//
+// class _FlyZoneInOverlayState extends State<_FlyZoneInOverlay> {
+//   late final OverlayEntry _entry;
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//
+//     _entry = OverlayEntry(builder: _buildEntries);
+//
+//     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+//       Overlay.of(context)!.insert(_entry);
+//     });
+//   }
+//
+//   @override
+//   void didChangeDependencies() {
+//     super.didChangeDependencies();
+//   }
+//
+//   @override
+//   void dispose() {
+//     _entry.remove();
+//     super.dispose();
+//   }
+//
+//   @override
+//   void didUpdateWidget(_FlyZoneInOverlay oldWidget) {
+//     super.didUpdateWidget(oldWidget);
+//   }
+//
+//   Widget _buildEntries(BuildContext context) {
+//     return Stack(
+//       children: widget.entries,
+//     );
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return widget.child;
+//   }
+// }
