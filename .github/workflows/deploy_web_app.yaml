@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      working-directory: ./form_bloc_web
+      working-directory: ./example
 
     steps:
       - name: Checkout
@@ -35,4 +35,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.ACCESS_TOKEN }}
-          publish_dir: ./example/build/web
+          publish_dir: ${{ env.working-directory }}/build/web
