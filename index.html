@@ -14,7 +14,7 @@
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
   -->
-  <base href="/">
+  <base href="/mek_floating_drag/">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
@@ -34,38 +34,25 @@
 
   <script>
     // The value below is injected by flutter build, do not touch.
-    var serviceWorkerVersion = '1413239390';
+    var serviceWorkerVersion = '1755097001';
   </script>
-<!--  &lt;!&ndash; This script adds the flutter initialization JS code &ndash;&gt;-->
-<!--  <script src="flutter.js" defer></script>-->
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer></script>
 </head>
 <body>
-<!-- This script installs service_worker.js to provide PWA functionality to
-     application. For more information, see:
-     https://developers.google.com/web/fundamentals/primers/service-workers -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('flutter_service_worker.js?v=1413239390');
+  <script>
+    window.addEventListener('load', function(ev) {
+      // Download main.dart.js
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        }
+      }).then(function(engineInitializer) {
+        return engineInitializer.initializeEngine();
+      }).then(function(appRunner) {
+        return appRunner.runApp();
+      });
     });
-  }
-</script>
-<script src="main.dart.js" type="application/javascript"></script>
+  </script>
 </body>
-<!--<body>-->
-<!--  <script>-->
-<!--    window.addEventListener('load', function(ev) {-->
-<!--      // Download main.dart.js-->
-<!--      _flutter.loader.loadEntrypoint({-->
-<!--        serviceWorker: {-->
-<!--          serviceWorkerVersion: serviceWorkerVersion,-->
-<!--        }-->
-<!--      }).then(function(engineInitializer) {-->
-<!--        return engineInitializer.initializeEngine();-->
-<!--      }).then(function(appRunner) {-->
-<!--        return appRunner.runApp();-->
-<!--      });-->
-<!--    });-->
-<!--  </script>-->
-<!--</body>-->
 </html>
