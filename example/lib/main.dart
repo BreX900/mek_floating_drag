@@ -11,9 +11,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Mek Floating Drag',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.deepPurple,
       ),
       home: const MyHomePage(),
     );
@@ -28,11 +28,11 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
-  late final _dartController = FloatingDartController(vsync: this);
+  late final _draggableController = FloatingDraggableController(vsync: this);
 
   @override
   void dispose() {
-    _dartController.dispose();
+    _draggableController.dispose();
     super.dispose();
   }
 
@@ -42,7 +42,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       appBar: AppBar(
         actions: [
           IconButton(
-            onPressed: () => _dartController.show(),
+            onPressed: () => _draggableController.show(),
             icon: const Icon(Icons.add),
           ),
         ],
@@ -59,10 +59,10 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       ),
     );
 
-    const target = FloatingBallTarget();
+    const dragTargetBin = FloatingCircularDragBin();
 
-    final dart = FloatingDart(
-      controller: _dartController,
+    final draggable = FloatingDraggable(
+      controller: _draggableController,
       naturalEdgesResolver: (containerSize, childSize) {
         return const EdgeInsets.symmetric(horizontal: double.nan, vertical: 64.0);
       },
@@ -74,26 +74,29 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       },
       child: FloatingActionButton(
         onPressed: () {},
+        child: const Icon(Icons.message),
       ),
     );
 
-    return FlyZone.inStack(
+    final result = FloatingZone.inStack(
       entries: [
         const Positioned(
           bottom: 16.0,
           right: 0.0,
           left: 0.0,
-          child: target,
+          child: dragTargetBin,
         ),
         Positioned(
           bottom: 16.0,
           right: 16.0,
-          child: dart,
+          child: draggable,
         ),
       ],
-      child: RestrictedFlyZone(
+      child: RestrictedFloatingZone(
         child: scaffold,
       ),
     );
+
+    return result;
   }
 }

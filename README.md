@@ -1,46 +1,69 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
-
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/guides/libraries/writing-package-pages). 
-
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-library-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/developing-packages). 
--->
-
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+Enable a widget to be dragged allowing it to be removed if dropped in an area or hidden if time passes or is pressed out.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-- [ ] Hidden on tap
-- [ ] Hidden on scroll
-- [ ] Cancel on enter in area
+TODO: Add list of features
 
 ## Getting started
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+Remember to wrap everything in a FloatingZone
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
+Define your draggable widget.
 
 ```dart
-const like = 'sample';
+final draggable = FloatingDraggable(
+  controller: _dartController,
+  naturalEdgesResolver: (containerSize, childSize) {
+    return const EdgeInsets.symmetric(horizontal: double.nan, vertical: 64.0);
+  },
+  elasticEdgesResolver: (containerSize, childSize) {
+    return const EdgeInsets.symmetric(horizontal: 16.0, vertical: double.nan);
+  },
+  retractEdgesResolver: (containerSize, childSize) {
+    return EdgeInsets.symmetric(horizontal: -(0.60 * childSize.width), vertical: double.nan);
+  },
+  child: FloatingActionButton(
+    onPressed: () {},
+    child: const Icon(Icons.message),
+  ),
+);
 ```
+
+You can define a target for dragging, this target will delete the draggable widget when dropped into it
+```dart
+const dragTarget = FloatingCircularDragBin();
+```
+
+Wrap it all up in a Floating Zone. It is necessary for proper functioning. You can also use `FloatingZone.inOverlay`.
+```dart
+final result = FloatingZone.inStack(
+  entries: [
+    const Positioned(
+      bottom: 16.0,
+      right: 0.0,
+      left: 0.0,
+      child: dragTargetBin,
+    ),
+    Positioned(
+      bottom: 16.0,
+      right: 16.0,
+      child: draggable,
+    ),
+  ],
+  child: RestrictedFloatingZone(
+    child: scaffold,
+  ),
+);
+```
+
+If you use `RestrictedFloatingZone` you will be able to hide the draggable widget when the user presses in `RestrictedFloatingZone`
+
 
 ## Additional information
 
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+TODO: Add additional information
 
 ## Developer information
 

@@ -1,20 +1,20 @@
 import 'package:flutter/widgets.dart';
-import 'package:mek_floating_drag/src/darts/floating_dart_controller.dart';
-import 'package:mek_floating_drag/src/fly_zones/fly_zone.dart';
-import 'package:mek_floating_drag/src/fly_zones/fly_zone_scope.dart';
+import 'package:mek_floating_drag/src/darts/floating_draggable_controller.dart';
+import 'package:mek_floating_drag/src/fly_zones/floating_zone.dart';
+import 'package:mek_floating_drag/src/fly_zones/floating_zone_scope.dart';
 import 'package:mek_floating_drag/src/utils/listener_subscription.dart';
 import 'package:mek_floating_drag/src/utils/offset_resolver.dart';
 
 typedef FloatingEdgesResolver = EdgeInsets Function(Size containerSize, Size childSize);
 
-class FloatingDart extends StatefulWidget {
-  final FloatingDartController? controller;
+class FloatingDraggable extends StatefulWidget {
+  final FloatingDraggableController? controller;
   final FloatingEdgesResolver retractEdgesResolver;
   final FloatingEdgesResolver elasticEdgesResolver;
   final FloatingEdgesResolver naturalEdgesResolver;
   final Widget child;
 
-  const FloatingDart({
+  const FloatingDraggable({
     Key? key,
     this.controller,
     this.retractEdgesResolver = buildEmptyEdges,
@@ -28,15 +28,15 @@ class FloatingDart extends StatefulWidget {
   }
 
   @override
-  State<FloatingDart> createState() => FloatingDartState();
+  State<FloatingDraggable> createState() => FloatingDraggableState();
 }
 
-class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixin {
-  FlyZoneScope? _maybeFlyZone;
-  FlyZoneScope get _flyZone => _maybeFlyZone!;
+class FloatingDraggableState extends State<FloatingDraggable> with TickerProviderStateMixin {
+  FloatingZoneScope? _maybeZone;
+  FloatingZoneScope get _zone => _maybeZone!;
 
-  FloatingDartController? _internalController;
-  FloatingDartController get controller => (widget.controller ?? _internalController)!;
+  FloatingDraggableController? _internalController;
+  FloatingDraggableController get controller => (widget.controller ?? _internalController)!;
 
   final subscriptions = <ListenerSubscription>[];
 
@@ -58,7 +58,7 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   void initState() {
     super.initState();
 
-    if (widget.controller == null) _internalController = FloatingDartController(vsync: this);
+    if (widget.controller == null) _internalController = FloatingDraggableController(vsync: this);
 
     _initControllerListeners();
   }
@@ -66,22 +66,22 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final flyZone = FlyZone.of(context);
+    final flyZone = FloatingZone.of(context);
 
-    if (_maybeFlyZone?.controller != flyZone?.controller) {
-      _maybeFlyZone?.controller.detachDart(controller);
-      _maybeFlyZone = flyZone;
-      _maybeFlyZone?.controller.attachDart(controller);
+    if (_maybeZone?.controller != flyZone?.controller) {
+      _maybeZone?.controller.detachDraggable(controller);
+      _maybeZone = flyZone;
+      _maybeZone?.controller.attachDraggable(controller);
     }
   }
 
   @override
-  void didUpdateWidget(FloatingDart oldWidget) {
+  void didUpdateWidget(FloatingDraggable oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
       _disposeControllerListeners();
-      _flyZone.controller.detachDart((oldWidget.controller ?? _internalController)!);
-      _flyZone.controller.attachDart(controller);
+      _zone.controller.detachDraggable((oldWidget.controller ?? _internalController)!);
+      _zone.controller.attachDraggable(controller);
       _initControllerListeners();
     }
   }
@@ -152,29 +152,28 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   }
 
   void _startNaturalElasticAnimation() {
-    final containerSize = _flyZone.renderBox.size;
+    final zoneSize = _zone.renderBox.size;
     final childSize = renderBox.size;
     final localCurrentOffset = controller.position.value;
     final currentOffset =
-        _flyZone.renderBox.globalToLocal(renderBox.localToGlobal(localCurrentOffset));
+        _zone.renderBox.globalToLocal(renderBox.localToGlobal(localCurrentOffset));
 
     var targetOffset = currentOffset;
 
     final offsetResolver = OffsetResolver(
-      containerSize: containerSize,
+      containerSize: zoneSize,
       childSize: renderBox.size,
     );
 
     // Elastic Edges
-    final elasticEdges = widget.elasticEdgesResolver(containerSize, childSize);
+    final elasticEdges = widget.elasticEdgesResolver(zoneSize, childSize);
     targetOffset = offsetResolver.getElasticTarget(targetOffset, elasticEdges);
 
     // Natural Edges
-    final naturalEdges = widget.naturalEdgesResolver(containerSize, childSize);
+    final naturalEdges = widget.naturalEdgesResolver(zoneSize, childSize);
     targetOffset = offsetResolver.getNaturalTarget(targetOffset, naturalEdges);
 
-    final localTargetOffset =
-        renderBox.globalToLocal(_flyZone.renderBox.localToGlobal(targetOffset));
+    final localTargetOffset = renderBox.globalToLocal(_zone.renderBox.localToGlobal(targetOffset));
 
     setState(() {
       _naturalElasticAnimation = controller.naturalElasticAnimation.drive(Tween(
@@ -185,23 +184,23 @@ class FloatingDartState extends State<FloatingDart> with TickerProviderStateMixi
   }
 
   void _startRestrictAnimation() {
-    final containerSize = _flyZone.renderBox.size;
+    final zoneSize = _zone.renderBox.size;
     final childSize = renderBox.size;
     final localCurrentOffset = controller.position.value;
     final currentOffset =
-        _flyZone.renderBox.globalToLocal(renderBox.localToGlobal(localCurrentOffset));
+        _zone.renderBox.globalToLocal(renderBox.localToGlobal(localCurrentOffset));
 
     final offsetResolver = OffsetResolver(
-      containerSize: containerSize,
+      containerSize: zoneSize,
       childSize: renderBox.size,
     );
 
     // Retracted Edges
-    final retractEdges = widget.retractEdgesResolver(containerSize, childSize);
+    final retractEdges = widget.retractEdgesResolver(zoneSize, childSize);
     final retractedOffset = offsetResolver.getRetractedTarget(currentOffset, retractEdges);
 
     final localRetractedOffset =
-        renderBox.globalToLocal(_flyZone.renderBox.localToGlobal(retractedOffset));
+        renderBox.globalToLocal(_zone.renderBox.localToGlobal(retractedOffset));
 
     setState(() {
       _restrictAnimation = controller.restrictAnimation.drive(Tween(

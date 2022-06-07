@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-class FloatingDartController {
+class FloatingDraggableController {
   final TickerProvider _vsync;
   Object? _animationKey;
 
@@ -24,7 +24,7 @@ class FloatingDartController {
   late final _restrictController = AnimationController(vsync: _vsync);
   Animation<double> get restrictAnimation => _restrictController.view;
 
-  FloatingDartController({
+  FloatingDraggableController({
     required TickerProvider vsync,
     bool initialVisibility = true,
     Duration duration = const Duration(milliseconds: 300),

@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-class FloatingTargetController {
+class FloatingDragTargetController {
   final TickerProvider _vsync;
 
   final Duration _visibilityDuration;
@@ -9,7 +9,7 @@ class FloatingTargetController {
   late final _visibilityController = AnimationController(vsync: _vsync);
   Animation<double> get visibilityAnimation => _visibilityController.view;
 
-  FloatingTargetController({
+  FloatingDragTargetController({
     required TickerProvider vsync,
     Duration visibilityDuration = const Duration(milliseconds: 300),
     Curve visibilityCurve = Curves.easeInToLinear,
