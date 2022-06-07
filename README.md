@@ -1,5 +1,7 @@
 Enable a widget to be dragged allowing it to be removed if dropped in an area or hidden if time passes or is pressed out.
 
+[**TRY WEB APP EXAMPLE**](https://brex900.github.io/mek_floating_drag/#/)
+
 ## Features
 
 TODO: Add list of features
