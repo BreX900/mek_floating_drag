@@ -25,7 +25,7 @@ jobs:
         working-directory: ${{ env.working-directory }}
 
       - name: Build web
-        run: flutter build web --web-renderer html
+        run: flutter build web
         working-directory: ${{ env.working-directory }}
 
       - name: Deploy
