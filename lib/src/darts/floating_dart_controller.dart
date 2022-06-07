@@ -31,7 +31,7 @@ class FloatingDartController {
     Duration? visibilityDuration,
     Duration? naturalElasticDuration,
     Curve naturalElasticCurve = Curves.bounceOut,
-    Duration restrictAfter = const Duration(seconds: 3),
+    Duration? restrictAfter = const Duration(seconds: 3),
     Duration? restrictDuration,
     Curve restrictCurve = Curves.linearToEaseOut,
   })  : _vsync = vsync,
@@ -42,21 +42,23 @@ class FloatingDartController {
         _restrictCurve = restrictCurve {
     _visibilityController.value = initialVisibility ? 1.0 : 0.0;
 
-    naturalElasticAnimation.addStatusListener((status) async {
-      switch (status) {
-        case AnimationStatus.forward:
-        case AnimationStatus.reverse:
-        case AnimationStatus.dismissed:
-          break;
-        case AnimationStatus.completed:
-          final animationKey = Object();
-          _animationKey = animationKey;
-          await Future.delayed(restrictAfter);
-          if (_animationKey != animationKey) return;
-          animateRestrict();
-          break;
-      }
-    });
+    if (restrictAfter != null) {
+      naturalElasticAnimation.addStatusListener((status) async {
+        switch (status) {
+          case AnimationStatus.forward:
+          case AnimationStatus.reverse:
+          case AnimationStatus.dismissed:
+            break;
+          case AnimationStatus.completed:
+            final animationKey = Object();
+            _animationKey = animationKey;
+            await Future.delayed(restrictAfter);
+            if (_animationKey != animationKey) return;
+            animateRestrict();
+            break;
+        }
+      });
+    }
   }
 
   Future<void> show() async {
