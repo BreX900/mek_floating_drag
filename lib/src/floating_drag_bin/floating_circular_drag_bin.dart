@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mek_floating_drag/src/targets/floating_drag_bin.dart';
-import 'package:mek_floating_drag/src/targets/floating_target_controller.dart';
+import 'package:mek_floating_drag/src/floating_drag_bin/floating_drag_bin.dart';
+import 'package:mek_floating_drag/src/floating_drag_bin/floating_drag_target_controller.dart';
 
 class FloatingCircularDragBin extends StatelessWidget {
   final FloatingDragTargetController? controller;

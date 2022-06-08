@@ -1,11 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 class FloatingDraggableController {
   final TickerProvider _vsync;
   Object? _animationKey;
 
-  final isDragging = ValueNotifier(false);
-  late final position = ValueNotifier(Offset.zero);
+  final _isDragging = ValueNotifier(false);
+  ValueListenable<bool> get isDragging => _isDragging;
+  late final _position = ValueNotifier(Offset.zero);
+  ValueListenable<Offset> get position => _position;
 
   final Duration _visibilityDuration;
 
@@ -65,7 +68,11 @@ class FloatingDraggableController {
     if (_visibilityController.status == AnimationStatus.forward) return;
 
     _animationKey = null;
-    position.value = Offset.zero;
+
+    _naturalElasticController.reset();
+    _restrictController.reset();
+
+    _position.value = Offset.zero;
     await _visibilityController.animateTo(1.0, duration: _visibilityDuration);
   }
 
@@ -73,10 +80,11 @@ class FloatingDraggableController {
     if (_visibilityController.status == AnimationStatus.reverse) return;
 
     _animationKey = null;
-    await _visibilityController.animateTo(0.0, duration: _visibilityDuration);
+    await _visibilityController.animateBack(0.0, duration: _visibilityDuration);
   }
 
   Future<void> animateElastic() async {
+    if (_visibilityController.isDismissed) return;
     if (_naturalElasticController.isAnimating) return;
     _animationKey = null;
     _restrictController.stop();
@@ -90,6 +98,7 @@ class FloatingDraggableController {
   }
 
   Future<void> animateRestrict() async {
+    if (_visibilityController.isDismissed) return;
     if (_restrictController.isAnimating) return;
     _animationKey = null;
     _naturalElasticController.stop();
@@ -107,20 +116,20 @@ class FloatingDraggableController {
     _naturalElasticController.stop();
     _restrictController.stop();
 
-    isDragging.value = true;
+    _isDragging.value = true;
   }
 
   void dragUpdate(Offset delta) {
-    position.value += delta;
+    _position.value += delta;
   }
 
   void dragEnd() {
-    isDragging.value = false;
+    _isDragging.value = false;
   }
 
   /// Update position only when dragging or animation is terminated
   void updatePosition(Offset value) {
-    position.value = value;
+    _position.value = value;
   }
 
   void dispose() {

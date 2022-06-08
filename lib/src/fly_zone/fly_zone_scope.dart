@@ -1,13 +1,13 @@
 import 'package:flutter/widgets.dart';
-import 'package:mek_floating_drag/src/fly_zones/floating_zone_controller.dart';
+import 'package:mek_floating_drag/src/fly_zone/fly_zone_controller.dart';
 
-class FloatingZoneScope extends InheritedWidget {
-  final FloatingZoneController controller;
+class FlyZoneScope extends InheritedWidget {
+  final FlyZoneController controller;
   final RenderBox Function() _renderBoxGetter;
 
   RenderBox get renderBox => _renderBoxGetter();
 
-  const FloatingZoneScope({
+  const FlyZoneScope({
     Key? key,
     required this.controller,
     required RenderBox Function() renderBoxGetter,
@@ -16,6 +16,6 @@ class FloatingZoneScope extends InheritedWidget {
         super(key: key, child: child);
 
   @override
-  bool updateShouldNotify(FloatingZoneScope oldWidget) =>
+  bool updateShouldNotify(FlyZoneScope oldWidget) =>
       controller != oldWidget.controller || _renderBoxGetter != oldWidget._renderBoxGetter;
 }

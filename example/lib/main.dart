@@ -78,7 +78,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       ),
     );
 
-    final result = FloatingZone.inStack(
+    final result = FlyZone.inStack(
       entries: [
         const Positioned(
           bottom: 16.0,
@@ -92,7 +92,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           child: draggable,
         ),
       ],
-      child: RestrictedFloatingZone(
+      child: RestrictedFlyZone(
         child: scaffold,
       ),
     );

@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
-import 'package:mek_floating_drag/src/darts/floating_draggable_controller.dart';
-import 'package:mek_floating_drag/src/targets/floating_target_controller.dart';
+import 'package:mek_floating_drag/src/floating_drag_bin/floating_drag_target_controller.dart';
+import 'package:mek_floating_drag/src/floating_draggable/floating_draggable_controller.dart';
 
-class FloatingZoneController extends ChangeNotifier {
+class FlyZoneController extends ChangeNotifier {
   final _draggableControllers = <FloatingDraggableController>[];
   final _dragTargetControllers = <FloatingDragTargetController>[];
 

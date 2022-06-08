@@ -1,40 +1,40 @@
 import 'package:flutter/widgets.dart';
-import 'package:mek_floating_drag/src/fly_zones/floating_zone_controller.dart';
-import 'package:mek_floating_drag/src/fly_zones/floating_zone_scope.dart';
+import 'package:mek_floating_drag/src/fly_zone/fly_zone_controller.dart';
+import 'package:mek_floating_drag/src/fly_zone/fly_zone_scope.dart';
 
-abstract class FloatingZone implements Widget {
-  const factory FloatingZone({
+abstract class FlyZone implements Widget {
+  const factory FlyZone({
     Key? key,
-    FloatingZoneController? controller,
+    FlyZoneController? controller,
     required Widget child,
-  }) = _BasicFloatingZone;
+  }) = _BasicFlyZone;
 
-  const factory FloatingZone.inStack({
+  const factory FlyZone.inStack({
     Key? key,
-    FloatingZoneController? controller,
+    FlyZoneController? controller,
     required List<Widget> entries,
     required Widget child,
-  }) = _FloatingZoneInStack;
+  }) = _FlyZoneInStack;
 
-  const factory FloatingZone.inOverlay({
+  const factory FlyZone.inOverlay({
     Key? key,
-    FloatingZoneController? controller,
+    FlyZoneController? controller,
     required List<Widget> entries,
     required Widget child,
-  }) = _FloatingZoneInOverlay;
+  }) = _FlyZoneInOverlay;
 
-  static FloatingZoneScope? of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<FloatingZoneScope>();
+  static FlyZoneScope? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<FlyZoneScope>();
   }
 }
 
-class _BasicFloatingZone extends StatefulWidget implements FloatingZone {
-  final FloatingZoneController? controller;
-  final void Function(FloatingZoneController controller, ValueGetter<RenderBox> renderBoxGetter)?
+class _BasicFlyZone extends StatefulWidget implements FlyZone {
+  final FlyZoneController? controller;
+  final void Function(FlyZoneController controller, ValueGetter<RenderBox> renderBoxGetter)?
       onSetup;
   final Widget child;
 
-  const _BasicFloatingZone({
+  const _BasicFlyZone({
     Key? key,
     this.controller,
     this.onSetup,
@@ -42,17 +42,17 @@ class _BasicFloatingZone extends StatefulWidget implements FloatingZone {
   }) : super(key: key);
 
   @override
-  State<_BasicFloatingZone> createState() => _BasicFloatingZoneState();
+  State<_BasicFlyZone> createState() => _BasicFlyZoneState();
 }
 
-class _BasicFloatingZoneState extends State<_BasicFloatingZone> {
-  late FloatingZoneController _controller;
+class _BasicFlyZoneState extends State<_BasicFlyZone> {
+  late FlyZoneController _controller;
 
   @override
   void initState() {
     super.initState();
     ConstrainedBox;
-    _controller = FloatingZoneController();
+    _controller = FlyZoneController();
     widget.onSetup?.call(_controller, getRenderBox);
   }
 
@@ -68,7 +68,7 @@ class _BasicFloatingZoneState extends State<_BasicFloatingZone> {
   Widget build(BuildContext context) {
     Draggable;
     DragTarget;
-    return FloatingZoneScope(
+    return FlyZoneScope(
       controller: widget.controller ?? _controller,
       renderBoxGetter: getRenderBox,
       child: widget.child,
@@ -76,12 +76,12 @@ class _BasicFloatingZoneState extends State<_BasicFloatingZone> {
   }
 }
 
-class _FloatingZoneInStack extends StatelessWidget implements FloatingZone {
-  final FloatingZoneController? controller;
+class _FlyZoneInStack extends StatelessWidget implements FlyZone {
+  final FlyZoneController? controller;
   final List<Widget> entries;
   final Widget child;
 
-  const _FloatingZoneInStack({
+  const _FlyZoneInStack({
     Key? key,
     this.controller,
     required this.entries,
@@ -90,7 +90,7 @@ class _FloatingZoneInStack extends StatelessWidget implements FloatingZone {
 
   @override
   Widget build(BuildContext context) {
-    return _BasicFloatingZone(
+    return _BasicFlyZone(
       controller: controller,
       child: Stack(
         fit: StackFit.expand,
@@ -103,12 +103,12 @@ class _FloatingZoneInStack extends StatelessWidget implements FloatingZone {
   }
 }
 
-class _FloatingZoneInOverlay extends StatefulWidget implements FloatingZone {
-  final FloatingZoneController? controller;
+class _FlyZoneInOverlay extends StatefulWidget implements FlyZone {
+  final FlyZoneController? controller;
   final List<Widget> entries;
   final Widget child;
 
-  const _FloatingZoneInOverlay({
+  const _FlyZoneInOverlay({
     Key? key,
     this.controller,
     required this.entries,
@@ -116,13 +116,13 @@ class _FloatingZoneInOverlay extends StatefulWidget implements FloatingZone {
   }) : super(key: key);
 
   @override
-  State<_FloatingZoneInOverlay> createState() => _FloatingZoneInOverlayState();
+  State<_FlyZoneInOverlay> createState() => _FlyZoneInOverlayState();
 }
 
-class _FloatingZoneInOverlayState extends State<_FloatingZoneInOverlay> {
+class _FlyZoneInOverlayState extends State<_FlyZoneInOverlay> {
   late final OverlayEntry _entry;
 
-  FloatingZoneController? _controller;
+  FlyZoneController? _controller;
   RenderBox Function()? _renderBoxGetter;
 
   @override
@@ -137,7 +137,7 @@ class _FloatingZoneInOverlayState extends State<_FloatingZoneInOverlay> {
   }
 
   @override
-  void didUpdateWidget(_FloatingZoneInOverlay oldWidget) {
+  void didUpdateWidget(_FlyZoneInOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
   }
 
@@ -149,7 +149,7 @@ class _FloatingZoneInOverlayState extends State<_FloatingZoneInOverlay> {
   }
 
   Widget _buildEntries(BuildContext context) {
-    return _BasicFloatingZone(
+    return _BasicFlyZone(
       controller: widget.controller,
       onSetup: (controller, renderBoxGetter) {
         if (_controller == controller && _renderBoxGetter == renderBoxGetter) return;
@@ -171,7 +171,7 @@ class _FloatingZoneInOverlayState extends State<_FloatingZoneInOverlay> {
     if (_controller == null || _renderBoxGetter == null) {
       return widget.child;
     }
-    return FloatingZoneScope(
+    return FlyZoneScope(
       controller: _controller!,
       renderBoxGetter: _renderBoxGetter!,
       child: widget.child,

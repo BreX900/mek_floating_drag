@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
-import 'package:mek_floating_drag/src/darts/floating_draggable.dart';
-import 'package:mek_floating_drag/src/fly_zones/floating_zone.dart';
-import 'package:mek_floating_drag/src/fly_zones/floating_zone_scope.dart';
-import 'package:mek_floating_drag/src/targets/floating_target_controller.dart';
+import 'package:mek_floating_drag/src/floating_drag_bin/floating_drag_target_controller.dart';
+import 'package:mek_floating_drag/src/floating_draggable/floating_draggable.dart';
+import 'package:mek_floating_drag/src/fly_zone/fly_zone.dart';
+import 'package:mek_floating_drag/src/fly_zone/fly_zone_scope.dart';
 import 'package:mek_floating_drag/src/utils/listener_subscription.dart';
 
 class FloatingDragBin extends StatefulWidget {
@@ -20,8 +20,8 @@ class FloatingDragBin extends StatefulWidget {
 }
 
 class _FloatingDragBinState extends State<FloatingDragBin> with TickerProviderStateMixin {
-  FloatingZoneScope? _maybeZone;
-  FloatingZoneScope get _zone => _maybeZone!;
+  FlyZoneScope? _maybeFlyZone;
+  FlyZoneScope get _flyZone => _maybeFlyZone!;
 
   FloatingDragTargetController? _internalController;
   FloatingDragTargetController get _controller => (widget.controller ?? _internalController)!;
@@ -36,18 +36,18 @@ class _FloatingDragBinState extends State<FloatingDragBin> with TickerProviderSt
   void initState() {
     super.initState();
 
-    _internalController = FloatingDragTargetController(vsync: this);
+    if (widget.controller == null) _internalController = FloatingDragTargetController(vsync: this);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final flyZone = FloatingZone.of(context);
+    final flyZone = FlyZone.of(context);
 
-    if (_maybeZone != flyZone) {
-      _maybeZone?.controller.detachDragTarget(_controller);
-      _maybeZone = flyZone;
-      _maybeZone?.controller.attachDragTarget(_controller);
+    if (_maybeFlyZone != flyZone) {
+      _maybeFlyZone?.controller.detachDragTarget(_controller);
+      _maybeFlyZone = flyZone;
+      _maybeFlyZone?.controller.attachDragTarget(_controller);
     }
   }
 
@@ -55,8 +55,14 @@ class _FloatingDragBinState extends State<FloatingDragBin> with TickerProviderSt
   void didUpdateWidget(FloatingDragBin oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
-      _zone.controller.detachDragTarget((oldWidget.controller ?? _internalController)!);
-      _zone.controller.attachDragTarget(_controller);
+      _flyZone.controller.detachDragTarget(_controller);
+      if (widget.controller == null) {
+        _internalController ??= FloatingDragTargetController(vsync: this);
+      } else {
+        _internalController?.dispose();
+        _internalController = null;
+      }
+      _flyZone.controller.attachDragTarget(_controller);
     }
   }
 
@@ -73,12 +79,13 @@ class _FloatingDragBinState extends State<FloatingDragBin> with TickerProviderSt
     late ListenerSubscription subscription;
     subscription = draggableController.visibilityAnimation.listenStatus((status) {
       switch (status) {
-        case AnimationStatus.forward:
         case AnimationStatus.reverse:
           break;
-        case AnimationStatus.completed:
         case AnimationStatus.dismissed:
           draggableController.updatePosition(_draggablePositionAnimation.value);
+          break;
+        case AnimationStatus.forward:
+        case AnimationStatus.completed:
           subscription.close();
           break;
       }

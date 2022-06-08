@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:mek_floating_drag/src/darts/floating_draggable_controller.dart';
-import 'package:mek_floating_drag/src/fly_zones/floating_zone.dart';
-import 'package:mek_floating_drag/src/fly_zones/floating_zone_scope.dart';
+import 'package:mek_floating_drag/src/floating_draggable/floating_draggable_controller.dart';
+import 'package:mek_floating_drag/src/fly_zone/fly_zone.dart';
+import 'package:mek_floating_drag/src/fly_zone/fly_zone_scope.dart';
 import 'package:mek_floating_drag/src/utils/listener_subscription.dart';
 import 'package:mek_floating_drag/src/utils/offset_resolver.dart';
 
@@ -32,8 +32,8 @@ class FloatingDraggable extends StatefulWidget {
 }
 
 class FloatingDraggableState extends State<FloatingDraggable> with TickerProviderStateMixin {
-  FloatingZoneScope? _maybeZone;
-  FloatingZoneScope get _zone => _maybeZone!;
+  FlyZoneScope? _maybeFlyZone;
+  FlyZoneScope get _flyZone => _maybeFlyZone!;
 
   FloatingDraggableController? _internalController;
   FloatingDraggableController get controller => (widget.controller ?? _internalController)!;
@@ -49,7 +49,9 @@ class FloatingDraggableState extends State<FloatingDraggable> with TickerProvide
 
   set builder(TransitionBuilder? value) {
     if (_builder == value) return;
-    setState(() => _builder = value);
+    _builder = value;
+    setState(() {});
+    // setState(() => _builder = value);
   }
 
   final _draggableKey = GlobalKey();
@@ -66,12 +68,12 @@ class FloatingDraggableState extends State<FloatingDraggable> with TickerProvide
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final flyZone = FloatingZone.of(context);
+    final flyZone = FlyZone.of(context);
 
-    if (_maybeZone?.controller != flyZone?.controller) {
-      _maybeZone?.controller.detachDraggable(controller);
-      _maybeZone = flyZone;
-      _maybeZone?.controller.attachDraggable(controller);
+    if (_maybeFlyZone?.controller != flyZone?.controller) {
+      _maybeFlyZone?.controller.detachDraggable(controller);
+      _maybeFlyZone = flyZone;
+      _maybeFlyZone?.controller.attachDraggable(controller);
     }
   }
 
@@ -80,8 +82,14 @@ class FloatingDraggableState extends State<FloatingDraggable> with TickerProvide
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
       _disposeControllerListeners();
-      _zone.controller.detachDraggable((oldWidget.controller ?? _internalController)!);
-      _zone.controller.attachDraggable(controller);
+      _flyZone.controller.detachDraggable((oldWidget.controller ?? _internalController)!);
+      if (widget.controller == null) {
+        _internalController ??= FloatingDraggableController(vsync: this);
+      } else {
+        _internalController?.dispose();
+        _internalController = null;
+      }
+      _flyZone.controller.attachDraggable(controller);
       _initControllerListeners();
     }
   }
@@ -96,10 +104,10 @@ class FloatingDraggableState extends State<FloatingDraggable> with TickerProvide
   void _initControllerListeners() {
     controller.visibilityAnimation.listenStatus((status) {
       switch (status) {
-        case AnimationStatus.dismissed:
         case AnimationStatus.forward:
         case AnimationStatus.reverse:
           break;
+        case AnimationStatus.dismissed:
         case AnimationStatus.completed:
           builder = null;
           break;
@@ -115,12 +123,12 @@ class FloatingDraggableState extends State<FloatingDraggable> with TickerProvide
           break;
         case AnimationStatus.dismissed:
           if (_naturalElasticAnimation == null) return;
-          controller.position.value = _naturalElasticAnimation!.value;
+          controller.updatePosition(_naturalElasticAnimation!.value);
           setState(() => _naturalElasticAnimation = null);
           break;
         case AnimationStatus.completed:
           if (_naturalElasticAnimation == null) return;
-          controller.position.value = _naturalElasticAnimation!.value;
+          controller.updatePosition(_naturalElasticAnimation!.value);
           setState(() => _naturalElasticAnimation = null);
           break;
       }
@@ -135,12 +143,12 @@ class FloatingDraggableState extends State<FloatingDraggable> with TickerProvide
           break;
         case AnimationStatus.dismissed:
           if (_restrictAnimation == null) return;
-          controller.position.value = _restrictAnimation!.value;
+          controller.updatePosition(_restrictAnimation!.value);
           setState(() => _restrictAnimation = null);
           break;
         case AnimationStatus.completed:
           if (_restrictAnimation == null) return;
-          controller.position.value = _restrictAnimation!.value;
+          controller.updatePosition(_restrictAnimation!.value);
           setState(() => _restrictAnimation = null);
           break;
       }
@@ -152,11 +160,11 @@ class FloatingDraggableState extends State<FloatingDraggable> with TickerProvide
   }
 
   void _startNaturalElasticAnimation() {
-    final zoneSize = _zone.renderBox.size;
+    final zoneSize = _flyZone.renderBox.size;
     final childSize = renderBox.size;
     final localCurrentOffset = controller.position.value;
     final currentOffset =
-        _zone.renderBox.globalToLocal(renderBox.localToGlobal(localCurrentOffset));
+        _flyZone.renderBox.globalToLocal(renderBox.localToGlobal(localCurrentOffset));
 
     var targetOffset = currentOffset;
 
@@ -173,7 +181,8 @@ class FloatingDraggableState extends State<FloatingDraggable> with TickerProvide
     final naturalEdges = widget.naturalEdgesResolver(zoneSize, childSize);
     targetOffset = offsetResolver.getNaturalTarget(targetOffset, naturalEdges);
 
-    final localTargetOffset = renderBox.globalToLocal(_zone.renderBox.localToGlobal(targetOffset));
+    final localTargetOffset =
+        renderBox.globalToLocal(_flyZone.renderBox.localToGlobal(targetOffset));
 
     setState(() {
       _naturalElasticAnimation = controller.naturalElasticAnimation.drive(Tween(
@@ -184,11 +193,11 @@ class FloatingDraggableState extends State<FloatingDraggable> with TickerProvide
   }
 
   void _startRestrictAnimation() {
-    final zoneSize = _zone.renderBox.size;
+    final zoneSize = _flyZone.renderBox.size;
     final childSize = renderBox.size;
     final localCurrentOffset = controller.position.value;
     final currentOffset =
-        _zone.renderBox.globalToLocal(renderBox.localToGlobal(localCurrentOffset));
+        _flyZone.renderBox.globalToLocal(renderBox.localToGlobal(localCurrentOffset));
 
     final offsetResolver = OffsetResolver(
       containerSize: zoneSize,
@@ -200,7 +209,7 @@ class FloatingDraggableState extends State<FloatingDraggable> with TickerProvide
     final retractedOffset = offsetResolver.getRetractedTarget(currentOffset, retractEdges);
 
     final localRetractedOffset =
-        renderBox.globalToLocal(_zone.renderBox.localToGlobal(retractedOffset));
+        renderBox.globalToLocal(_flyZone.renderBox.localToGlobal(retractedOffset));
 
     setState(() {
       _restrictAnimation = controller.restrictAnimation.drive(Tween(
