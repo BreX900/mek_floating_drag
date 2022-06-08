@@ -54,7 +54,7 @@ class OffsetResolver {
       }
     } else {
       if (!edges.bottom.isNaN) {
-        final marginBottom = containerSize.height - (childSize.height + edges.top);
+        final marginBottom = containerSize.height - (childSize.height + edges.bottom);
         if (origin.dy > marginBottom) nextDy = marginBottom;
       }
     }
@@ -81,7 +81,7 @@ class OffsetResolver {
       }
     } else {
       if (!edges.bottom.isNaN) {
-        final marginBottom = containerSize.height - (childSize.height + edges.top);
+        final marginBottom = containerSize.height - (childSize.height + edges.bottom);
         if (offset.dy < marginBottom) nextDy = marginBottom;
       }
     }

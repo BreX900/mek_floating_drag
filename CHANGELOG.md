@@ -1,3 +1,6 @@
+## 0.1.2
+- Fix bottom edges resolving
+
 ## 0.1.1
 - Feat add shadow to `FloatingCircularDragBin`
 - Fix controllers disposing
