@@ -7,9 +7,9 @@ const RESOURCES = {
 "icons/Icon-192.png": "ac9a721a12bbc803b44f645561ecb1e1",
 "icons/Icon-maskable-512.png": "301a7604d45b3e739efc881eb04896ea",
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
-"index.html": "1d4f035b56a85fec0150e967b66e2d08",
-"/": "1d4f035b56a85fec0150e967b66e2d08",
-"main.dart.js": "ed001d7a356d4bb368b9132c0c8ec86c",
+"index.html": "6baa04147a00c3a6423fb97c6967dc58",
+"/": "6baa04147a00c3a6423fb97c6967dc58",
+"main.dart.js": "cfeef9c8045e65dc506fe2eccef99e83",
 "version.json": "ff966ab969ba381b900e61629bfb9789",
 "favicon.png": "5dcef449791fa27946b3d35ad8803796",
 "flutter.js": "0816e65a103ba8ba51b174eeeeb2cb67",
@@ -20,7 +20,7 @@ const RESOURCES = {
 "assets/FontManifest.json": "7b2a36307916a9721811788013e65289",
 "assets/AssetManifest.json": "99914b932bd37a50b983c5e7c90ae93b",
 "assets/fonts/MaterialIcons-Regular.otf": "95db9098c58fd6db106f1116bae85a0b",
-"assets/NOTICES": "2f6288be3a0ba90fb1519700f42e8151",
+"assets/NOTICES": "7e6d3f23cd51db23d0ec173a46cb3e1e",
 "manifest.json": "0867c3e13649ac4d06fe34b7b3ddce08"
 };
 
