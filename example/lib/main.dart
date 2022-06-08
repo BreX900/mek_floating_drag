@@ -11,6 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Mek Floating Drag',
       theme: ThemeData(
         primarySwatch: Colors.deepPurple,
@@ -40,10 +41,21 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final scaffold = Scaffold(
       appBar: AppBar(
+        title: const Text('Mek Floating Drag'),
         actions: [
-          IconButton(
-            onPressed: () => _draggableController.show(),
-            icon: const Icon(Icons.add),
+          AnimatedBuilder(
+            animation: _draggableController.visibilityAnimation,
+            child: IconButton(
+              onPressed: () => _draggableController.show(),
+              icon: const Icon(Icons.add),
+            ),
+            builder: (context, child) {
+              return Transform.scale(
+                scale: 1 - _draggableController.visibilityAnimation.value,
+                transformHitTests: false,
+                child: child!,
+              );
+            },
           ),
         ],
       ),
@@ -64,7 +76,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     final draggable = FloatingDraggable(
       controller: _draggableController,
       naturalEdgesResolver: (containerSize, childSize) {
-        return const EdgeInsets.symmetric(horizontal: double.nan, vertical: 64.0);
+        return const EdgeInsets.symmetric(horizontal: double.nan, vertical: 16.0);
       },
       elasticEdgesResolver: (containerSize, childSize) {
         return const EdgeInsets.symmetric(horizontal: 16.0, vertical: double.nan);
@@ -73,7 +85,10 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         return EdgeInsets.symmetric(horizontal: -(0.60 * childSize.width), vertical: double.nan);
       },
       child: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          duration: const Duration(seconds: 1),
+          content: Text('Tapped!'),
+        )),
         child: const Icon(Icons.message),
       ),
     );

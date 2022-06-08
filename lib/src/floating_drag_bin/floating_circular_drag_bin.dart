@@ -5,6 +5,7 @@ import 'package:mek_floating_drag/src/floating_drag_bin/floating_drag_target_con
 class FloatingCircularDragBin extends StatelessWidget {
   final FloatingDragTargetController? controller;
   final double size;
+  final double elevation;
   final Color foregroundColor;
   final Color backgroundColor;
   final Widget icon;
@@ -13,6 +14,7 @@ class FloatingCircularDragBin extends StatelessWidget {
     Key? key,
     this.controller,
     this.size = 100,
+    this.elevation = 8.0,
     this.foregroundColor = Colors.white,
     this.backgroundColor = Colors.red,
     this.icon = const Icon(Icons.close),
@@ -26,11 +28,10 @@ class FloatingCircularDragBin extends StatelessWidget {
         return SizedBox(
           width: size,
           height: size,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: backgroundColor,
-            ),
+          child: Material(
+            elevation: elevation,
+            color: backgroundColor,
+            shape: const CircleBorder(),
             child: IconTheme.merge(
               data: IconThemeData(
                 color: foregroundColor,

@@ -1,5 +1,9 @@
-## 0.1.0
+## 0.1.1
+- Feat add shadow to `FloatingCircularDragBin`
+- Fix controllers disposing
+- Feat improve example
 
+## 0.1.0
 Feat:
 - You can drag it anywhere you want
 - The button is attracted to the edges of the container, it bounces!

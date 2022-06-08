@@ -133,6 +133,9 @@ class FloatingDraggableController {
   }
 
   void dispose() {
+    _isDragging.dispose();
+    _position.dispose();
+    _visibilityController.dispose();
     _naturalElasticController.dispose();
     _restrictController.dispose();
   }
