@@ -4,11 +4,18 @@ Enable a widget to be dragged allowing it to be removed if dropped in an area or
 
 ## Features
 
-TODO: Add list of features
+- [x] You can drag it anywhere you want
+- [x] The button is attracted to the edges of the container, it bounces!
+- [x] The button, if released outside the natural edges, is attracted inside
+- [x] The Button hides when some time passes
+- [x] The button hides if you don't play with him, if you hit someone else
+- [x] You can delete the button by dragging it over an area (Bin)
+- [x] When the button is released inside the bin it shrinks and aligns with the center of the bin
+- [ ] When the button approaches the bin it is attracted to it
 
 ## Getting started
 
-Remember to wrap everything in a FloatingZone
+Remember to wrap everything in a ´FloatingZone´
 
 ## Usage
 
@@ -69,4 +76,5 @@ TODO: Add additional information
 
 ## Developer information
 
-`dart pub global run index_generator`
+- Release: `flutter pub publish`
+- Generate barrel file: `dart pub global run index_generator`

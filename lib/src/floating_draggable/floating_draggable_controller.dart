@@ -57,7 +57,7 @@ class FloatingDraggableController {
             _animationKey = animationKey;
             await Future.delayed(restrictAfter);
             if (_animationKey != animationKey) return;
-            animateRestrict();
+            await animateRestrict();
             break;
         }
       });
