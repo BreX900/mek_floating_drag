@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/fly_zone/fly_zone.dart';
@@ -19,7 +21,7 @@ class RestrictedFlyZone extends StatelessWidget {
     return Listener(
       onPointerDown: (_) {
         for (final controller in flyZoneController.draggableControllers) {
-          controller.animateRestrict();
+          unawaited(controller.animateRestrict());
         }
       },
       child: child,

@@ -132,7 +132,7 @@ class _FlyZoneInOverlayState extends State<_FlyZoneInOverlay> {
     _entry = OverlayEntry(builder: _buildEntries);
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      Overlay.of(context)!.insert(_entry);
+      Overlay.of(context).insert(_entry);
     });
   }
 

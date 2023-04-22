@@ -2,6 +2,8 @@ Enable a widget to be dragged allowing it to be removed if dropped in an area or
 
 [**TRY WEB APP EXAMPLE**](https://brex900.github.io/mek_floating_drag/#/)
 
+<img width="300px" alt="Example" src="example.gif"/>
+
 ## Features
 
 - [x] You can drag it anywhere you want

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/floating_drag_bin/floating_drag_target_controller.dart';
 import 'package:mek_floating_drag/src/floating_draggable/floating_draggable_controller.dart';
@@ -37,9 +39,9 @@ class FlyZoneController extends ChangeNotifier {
     final isDragging = _draggableControllers.any((e) => e.isDragging.value);
     for (final controller in _dragTargetControllers) {
       if (isDragging) {
-        controller.show();
+        unawaited(controller.show());
       } else {
-        controller.hide();
+        unawaited(controller.hide());
       }
     }
   }

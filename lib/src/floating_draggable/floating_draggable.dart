@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:mek_floating_drag/src/floating_draggable/floating_draggable_controller.dart';
 import 'package:mek_floating_drag/src/fly_zone/fly_zone.dart';
@@ -232,7 +234,7 @@ class FloatingDraggableState extends State<FloatingDraggable> with TickerProvide
 
     if (_builder != null) return;
 
-    controller.animateElastic();
+    unawaited(controller.animateElastic());
   }
 
   Widget _buildAppearAnimation(BuildContext context, Widget child) {
