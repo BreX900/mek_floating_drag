@@ -1,6 +1,6 @@
 name: mek_floating_drag
 description: Enable a widget to be dragged allowing it to be removed if dropped in an area or hidden if time passes or is pressed out.
-version: 0.1.3
+version: 0.1.3+1
 repository: https://github.com/BreX900/mek_floating_drag
 
 environment:
